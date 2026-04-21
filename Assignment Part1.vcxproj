@@ -128,11 +128,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Array.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dataset1-cityA.csv" />
     <None Include="dataset2-cityB.csv" />
     <None Include="dataset3-cityC.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ArrayProcessor.hpp" />
+    <ClInclude Include="Resident.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
