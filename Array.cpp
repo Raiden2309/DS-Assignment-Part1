@@ -87,14 +87,15 @@ void loadCSV(string filename, Dataset& city) {
 }
 
 //Analysis and Display
-void analyzeAndPrintEmissions(Dataset& city) {
-	cout << "\n================================================================================" << endl;
+void analyzeAndPrintEmissions(Dataset& city, int targetAgeGroup) {
+	cout << "\n====================================================================================" << endl;
 	cout << "Carbon Emission Analysis: " << city.cityName << endl;
-	cout << "\n================================================================================" << endl;
+	cout << "====================================================================================\n" << endl;
 
 	AgeGroupStats stats[NUM_AGE_GROUPS];
 	double cityTotalEmission = 0.0;
 
+	// 1. Process data and calculate totals
 	for (int i = 0; i < city.size; i++) {
 		int ageIdx = getAgeGroupIndex(city.data[i].age);
 		int modeIdx = getModeIndex(city.data[i].modeOfTransport);
@@ -108,49 +109,84 @@ void analyzeAndPrintEmissions(Dataset& city) {
 		}
 	}
 
+	// 2. Print the formatted table matching the screenshot
 	for (int i = 0; i < NUM_AGE_GROUPS; i++) {
+		// Skip age groups if the user selected a different specific one
+		if (targetAgeGroup != -1 && i != targetAgeGroup) continue;
 		if (stats[i].totalGroupCount == 0) continue;
 
-		cout << "\nAge Group: " << AGE_GROUPS[i] << endl;
-		cout << left << setw(20) << "Mode of Transport"
+		cout << "Age Group: " << AGE_GROUPS[i] << endl;
+		cout << string(85, '-') << endl;
+		cout << left << setw(22) << "Mode of Transport"
 			<< setw(10) << "Count"
-			<< setw(28) << "Total Emission (kg CO2)"
-			<< "Avg per Resident" << endl;
-		cout << string(80, '-') << endl;
+			<< setw(30) << "Total Emission (kg CO2)"
+			<< "Average per Resident" << endl;
 
 		for (int m = 0; m < NUM_MODES; m++) {
 			if (stats[i].modes[m].count > 0) {
 				double avgEmission = stats[i].modes[m].totalEmission / stats[i].modes[m].count;
 
-				cout << left << setw(20) << TRANSPORT_MODES[m]
-					<< setw(10) << stats[i].modes[m].count
-					<< setw(28) << fixed << setprecision(2) << stats[i].modes[m].totalEmission
-					<< fixed << setprecision(2) << avgEmission << endl;
+				cout << left << setw(22) << TRANSPORT_MODES[m]
+					<< setw(10) << stats[i].modes[m].count;
+
+				// Format to match screenshot (print "0" instead of "0.00" for empty values)
+				if (stats[i].modes[m].totalEmission == 0) {
+					cout << setw(30) << "0";
+				}
+				else {
+					cout << setw(30) << fixed << setprecision(2) << stats[i].modes[m].totalEmission;
+				}
+
+				if (avgEmission == 0) {
+					cout << "0\n";
+				}
+				else {
+					cout << fixed << setprecision(2) << avgEmission << "\n";
+				}
 			}
 		}
-		cout << string(80, '-') << endl;
-		cout << "Total Emission for Age Group: " << fixed << setprecision(2) << stats[i].totalGroupEmission << " kg CO2\n" << endl;
+		cout << string(85, '-') << endl;
+		cout << "Total Emission for Age Group: " << fixed << setprecision(2) << stats[i].totalGroupEmission << " kg CO2\n\n";
 	}
 
-	cout << ">>> TOTAL CARBON EMISSION FOR " << city.cityName << ": " << fixed << setprecision(2) << cityTotalEmission << " kg CO2 <<<\n";
-	cout << "================================================================================\n" << endl;
-
+	// Only show the grand total if they are viewing ALL age groups
+	if (targetAgeGroup == -1) {
+		cout << ">>> TOTAL CARBON EMISSION FOR " << city.cityName << ": " << fixed << setprecision(2) << cityTotalEmission << " kg CO2 <<<\n";
+		cout << "====================================================================================\n" << endl;
+	}
 }
 
 //Quick Sort
 //1. Quicksort Helper (Partitioning for Descending Order by Emission)
-int partition(Dataset& city, int low, int high) {
-	double pivotValue = city.data[high].totalMonthlyEmissions;
+int partition(Dataset& city, int low, int high, int sortBy, bool ascending) {
+	Resident pivot = city.data[high];
 	int i = (low - 1);
 
 	for (int j = low; j < high; j++) {
-		//Greater than because we want descending order
-			if (city.data[j].totalMonthlyEmissions > pivotValue){
-				i++;
-				Resident temp = city.data[i];
-				city.data[i] = city.data[j];
-				city.data[j] = temp;
+		bool swapNeeded = false;
+
+		if (sortBy == 1) { //1 - Sort By Age
+			if (ascending) {
+				if (city.data[j].age < pivot.age) swapNeeded = true;
 			}
+			else {
+				if (city.data[j].age > pivot.age) swapNeeded = true;
+			}
+		}
+		else if (sortBy == 2) { //2 - Sort By Emission
+			if (ascending) {
+				if (city.data[j].totalMonthlyEmissions < pivot.totalMonthlyEmissions) swapNeeded = true;
+			}
+			else {
+				if (city.data[j].totalMonthlyEmissions > pivot.totalMonthlyEmissions) swapNeeded = true;
+			}
+		}
+		if (swapNeeded) {
+			i++;
+			Resident temp = city.data[i];
+			city.data[i] = city.data[j];
+			city.data[j] = temp;
+		}
 	}
 	Resident temp = city.data[i + 1];
 	city.data[i + 1] = city.data[high];
@@ -160,21 +196,21 @@ int partition(Dataset& city, int low, int high) {
 }
 
 //2. Quicksort Recursive Helper
-void quickSortHelper(Dataset& city, int low, int high) {
+void quickSortHelper(Dataset& city, int low, int high, int sortBy, bool ascending) {
 	if (low < high) {
-		int pi = partition (city, low, high);
-		quickSortHelper(city, low, pi - 1);
-		quickSortHelper(city, pi + 1, high);
+		int pi = partition (city, low, high, sortBy, ascending);
+		quickSortHelper(city, low, pi - 1, sortBy, ascending);
+		quickSortHelper(city, pi + 1, high, sortBy, ascending);
 	}
 }
 
 //3. Quicksort Main Function
-void quickSortByEmission(Dataset& city) {
-	cout << "\nSorting " << city.cityName << " by Total Monthly Emission (Highest to Lowest) using QUICKSORT..." << endl;
+void quickSort(Dataset& city, int sortBy, bool ascending) {
+	cout << "\nSorting " << city.cityName << " using Quick Sort..." << endl;
 
 	auto start = chrono::high_resolution_clock::now();
 
-	quickSortHelper(city, 0, city.size - 1);
+	quickSortHelper(city, 0, city.size - 1, sortBy, ascending);
 
 	auto end = chrono::high_resolution_clock::now();
 	chrono::duration<double, std::milli> duration = end - start;
@@ -184,17 +220,34 @@ void quickSortByEmission(Dataset& city) {
 
 //Insertion Sort
 //Insertion Sort (Ascending Order by Age)
-void sortByAge(Dataset& city) {
-	cout << "\nSorting " << city.cityName << " by Age (Youngest to Oldest) using INSERTION SORT..." << endl;
+void insertionSort(Dataset& city, int sortBy, bool ascending) {
+	cout << "\nSorting " << city.cityName << " using Insertion Sort.." << endl;
 
 	auto start = chrono::high_resolution_clock::now();
 
 	for (int i = 1; i < city.size; i++) {
 		Resident key = city.data[i];
 		int j = i - 1;
-		while (j >= 0 && city.data[j].age > key.age) {
-			city.data[j + 1] = city.data[j];
-			j = j - 1;
+
+		bool moveNeeded = true;
+		while (j >= 0 && moveNeeded) {
+			moveNeeded = false;
+
+			if (sortBy == 1) { //1 - Sort By Age
+				if (ascending && city.data[j].age > key.age)
+					moveNeeded = true;
+				if (!ascending && city.data[j].age < key.age)
+					moveNeeded = true;
+			} else if (sortBy == 2) { //2 - Sort By Emission
+				if (ascending && city.data[j].totalMonthlyEmissions > key.totalMonthlyEmissions)
+					moveNeeded = true;
+				if (!ascending && city.data[j].totalMonthlyEmissions < key.totalMonthlyEmissions)
+					moveNeeded = true;
+			}
+			if (moveNeeded) {
+				city.data[j + 1] = city.data[j];
+				j= j -1;
+			}
 		}
 		city.data[j + 1] = key;
 	}

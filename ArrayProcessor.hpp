@@ -7,11 +7,11 @@
 // Function prototypes
 int countLines(std::string filename);
 void loadCSV(std::string filename, Dataset& city);
-void analyzeAndPrintEmissions(Dataset& city);
+void analyzeAndPrintEmissions(Dataset& city, int targetAgeGroup = -1);
 
 //Sorting functions
-void quickSortByEmission(Dataset& city); // Uses Quick Sort
-void sortByAge(Dataset& city);      // Uses Insertion Sort
+void quickSort(Dataset& city, int sortBy, bool ascending); // Uses Quick Sort
+void insertionSort(Dataset& city, int sortBy, bool ascending);     // Uses Insertion Sort
 void printTop5(Dataset& city);
 
 //Searching functions
