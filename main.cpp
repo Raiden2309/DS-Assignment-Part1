@@ -61,7 +61,7 @@ int main() {
 
     cout << "Loading datasets into dynamic arrays..." << endl;
 
-    // Call functions defined in ArrayProcessor.cpp
+    // Call functions defined in Array.cpp
     loadCSV("dataset1-cityA.csv", cityA);
     loadCSV("dataset2-cityB.csv", cityB);
     loadCSV("dataset3-cityC.csv", cityC);
@@ -144,7 +144,7 @@ int main() {
                         }
                     }
                     else {
-                        cout << "Large dataset detected (" << cityPtr->size << " items). Auto-selecting Insertion Sort." << endl;
+                        cout << "Large dataset detected (" << cityPtr->size << " items). Auto-selecting Quick Sort." << endl;
                         if (expressTarget == 1) {
                             quickSort(*cityPtr, 1, true); //Age, Ascending
                             isCitySortedByAge[cityChoice - 1] = true;
