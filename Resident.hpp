@@ -1,5 +1,5 @@
 #ifndef RESIDENT_HPP
-#define	RESIDENT_HPP
+#define RESIDENT_HPP
 
 #include <string>
 

@@ -6,9 +6,9 @@ using namespace std;
 
 LinkedList::LinkedList() : head(nullptr), tail(nullptr), length(0) {}
 
-LinkedList::~LinkedList() { clear(); }
+LinkedList::~LinkedList() { clearWithLinkedList(); }
 
-void LinkedList::clear() {
+void LinkedList::clearWithLinkedList() {
     Node* cur = head;
     while (cur) {
         Node* nxt = cur->next;
@@ -19,15 +19,11 @@ void LinkedList::clear() {
     length = 0;
 }
 
-void LinkedList::append(const Resident& r) {
+void LinkedList::appendWithLinkedList(const Resident& r) {
     Node* n = new Node(r);
     if (!head) head = tail = n;
     else { tail->next = n; tail = n; }
     ++length;
-}
-
-size_t LinkedList::getMemoryUsage() const {
-    return sizeof(*this) + (size_t)length * sizeof(Node);
 }
 
 static string nextField(const string& s, int& i) {
@@ -41,7 +37,7 @@ static string nextField(const string& s, int& i) {
 static int    toInt(const string& s) { return atoi(s.c_str()); }
 static double toDouble(const string& s) { return atof(s.c_str()); }
 
-void LinkedList::parseLine(const string& line, Resident& r) {
+void LinkedList::parseLineWithLinkedList(const string& line, Resident& r) {
     int i = 0;
     r.residentID = nextField(line, i);
     r.age = toInt(nextField(line, i));
@@ -52,7 +48,7 @@ void LinkedList::parseLine(const string& line, Resident& r) {
     r.totalMonthlyEmissions = r.dailyDistance * r.carbonEmissionFactor * r.avgDaysPerMonth;
 }
 
-bool LinkedList::loadFromCSV(const string& filename, const string& label) {
+bool LinkedList::loadFromCSVWithLinkedList(const string& filename, const string& label) {
     ifstream file(filename);
     if (!file.is_open()) {
         cerr << "Error: Could not open '" << filename << "'\n";
@@ -64,18 +60,17 @@ bool LinkedList::loadFromCSV(const string& filename, const string& label) {
     while (getline(file, line)) {
         if (line.empty()) continue;
         Resident r;
-        parseLine(line, r);
-        append(r);
+        parseLineWithLinkedList(line, r);
+        appendWithLinkedList(r);
     }
     cout << "Loaded " << length << " residents from '" << filename << "'";
     if (!label.empty()) cout << " [" << label << "]";
-    cout << "  |  Memory: " << getMemoryUsage() << " bytes\n";
     return true;
 }
 
-int LinkedList::getLength() const { return length; }
+int LinkedList::getLengthWithLinkedList() const { return length; }
 
-double LinkedList::getSortKey(const Resident& r, SortKey key) {
+double LinkedList::getSortKeyWithLinkedList(const Resident& r, SortKey key) {
     switch (key) {
     case BY_AGE:             return r.age;
     case BY_DAILY_DISTANCE:  return r.dailyDistance;
@@ -84,60 +79,75 @@ double LinkedList::getSortKey(const Resident& r, SortKey key) {
     return 0;
 }
 
-static const int INSERTION_THRESHOLD = 16;
-
-void LinkedList::insertionSort(int* idx, const double* keys, int low, int high) {
-    for (int i = low + 1; i <= high; ++i) {
-        int    pi = idx[i];
-        double pk = keys[pi];
-        int j = i - 1;
-        while (j >= low && keys[idx[j]] > pk) { idx[j + 1] = idx[j]; --j; }
-        idx[j + 1] = pi;
-    }
-}
-
-void LinkedList::medianOfThree(int* idx, const double* keys, int low, int high) {
+void LinkedList::medianOfThreeWithLinkedList(int* index, const double* keys, int low, int high) {
     int mid = low + (high - low) / 2;
-    if (keys[idx[mid]] < keys[idx[low]])  swap(idx[low], idx[mid]);
-    if (keys[idx[high]] < keys[idx[low]]) swap(idx[low], idx[high]);
-    if (keys[idx[high]] < keys[idx[mid]]) swap(idx[mid], idx[high]);
-    swap(idx[mid], idx[low]);
-}
 
-void LinkedList::threeWayPartition(int* idx, const double* keys,
-    int low, int high, int& lt, int& gt) {
-    double pv = keys[idx[low]];
-    lt = low; gt = high;
-    int i = low + 1;
-    while (i <= gt) {
-        double ck = keys[idx[i]];
-        if (ck < pv) swap(idx[i++], idx[lt++]);
-        else if (ck > pv) swap(idx[i], idx[gt--]);
-        else              ++i;
+    if (keys[index[mid]] < keys[index[low]]) {
+        int temp = index[low];
+        index[low] = index[mid];
+        index[mid] = temp;
     }
+    if (keys[index[high]] < keys[index[low]]) {
+        int temp = index[low];
+        index[low] = index[high];
+        index[high] = temp;
+    }
+    if (keys[index[high]] < keys[index[mid]]) {
+        int temp = index[mid];
+        index[mid] = index[high];
+        index[high] = temp;
+    }
+
+    int temp = index[mid];
+    index[mid] = index[low];
+    index[low] = temp;
 }
 
-void LinkedList::quickSortHelper(int* idx, const double* keys, int low, int high) {
-    while (low < high) {
-        if (high - low < INSERTION_THRESHOLD) {
-            insertionSort(idx, keys, low, high);
-            break;
+void LinkedList::threeWayPartitionWithLinkedList(int* index, const double* keys,
+    int low, int high, int& lessThan, int& greaterThan) {
+    double pivotKey = keys[index[low]];
+    lessThan = low;
+    greaterThan = high;
+    int i = low + 1;
+
+    while (i <= greaterThan) {
+        double currentKey = keys[index[i]];
+        if (currentKey < pivotKey) {
+            int temp = index[i];
+            index[i] = index[lessThan];
+            index[lessThan] = temp;
+            i++;
+            lessThan++;
         }
-        medianOfThree(idx, keys, low, high);
-        int lt, gt;
-        threeWayPartition(idx, keys, low, high, lt, gt);
-        if ((lt - 1 - low) <= (high - gt - 1)) {
-            quickSortHelper(idx, keys, low, lt - 1);
-            low = gt + 1;
+        else if (currentKey > pivotKey) {
+            int temp = index[i];
+            index[i] = index[greaterThan];
+            index[greaterThan] = temp;
+            greaterThan--;
         }
         else {
-            quickSortHelper(idx, keys, gt + 1, high);
-            high = lt - 1;
+            i++;
         }
     }
 }
 
-void LinkedList::sort(SortKey key) {
+void LinkedList::quickSortHelperWithLinkedList(int* index, const double* keys, int low, int high) {
+    while (low < high) {
+        medianOfThreeWithLinkedList(index, keys, low, high);
+        int lessThan, greaterThan;
+        threeWayPartitionWithLinkedList(index, keys, low, high, lessThan, greaterThan);
+        if ((lessThan - 1 - low) <= (high - greaterThan - 1)) {
+            quickSortHelperWithLinkedList(index, keys, low, lessThan - 1);
+            low = greaterThan + 1;
+        }
+        else {
+            quickSortHelperWithLinkedList(index, keys, greaterThan + 1, high);
+            high = lessThan - 1;
+        }
+    }
+}
+
+void LinkedList::sortWithLinkedList(SortKey key) {
     if (length <= 1) return;
 
     Node** nodes = new Node * [length];
@@ -147,12 +157,12 @@ void LinkedList::sort(SortKey key) {
     int i = 0;
     for (Node* cur = head; cur; cur = cur->next, ++i) {
         nodes[i] = cur;
-        keys[i] = getSortKey(cur->data, key);
+        keys[i] = getSortKeyWithLinkedList(cur->data, key);
         indices[i] = i;
     }
 
     auto t0 = chrono::high_resolution_clock::now();
-    quickSortHelper(indices, keys, 0, length - 1);
+    quickSortHelperWithLinkedList(indices, keys, 0, length - 1);
     auto t1 = chrono::high_resolution_clock::now();
 
     Resident* sorted = new Resident[length];
@@ -198,12 +208,12 @@ static void printRow(const Resident& r) {
         << setw(22) << r.totalMonthlyEmissions << "\n";
 }
 
-void LinkedList::print() const {
+void LinkedList::printWithLinkedList() const {
     printHeader();
     for (Node* cur = head; cur; cur = cur->next) printRow(cur->data);
 }
 
-void LinkedList::printTop5() const {
+void LinkedList::printTop5WithLinkedList() const {
     cout << "\nTop 5 Highest Emitters:\n"
         << left << setw(15) << "Resident ID"
         << setw(10) << "Age"
@@ -218,7 +228,7 @@ void LinkedList::printTop5() const {
         << fixed << setprecision(2) << cur->data.totalMonthlyEmissions << " kg CO2\n";
 }
 
-void LinkedList::printDatasetSummary() const {
+void LinkedList::printDatasetSummaryWithLinkedList() const {
     static const char* modes[6] = { "Car", "Bus", "Bicycle", "Walking", "School Bus", "Carpool" };
     double modeTotals[6] = {};
     int    modeCounts[6] = {};
@@ -275,11 +285,10 @@ static void printSearchHeader(const string& title) {
 static void printSearchFooter(int matches, double ms) {
     cout << string(82, '-') << "\n"
         << "Total matches: " << matches << "\n"
-        << "Search time  : " << fixed << setprecision(4) << ms << " ms"
-        << "  |  Time complexity: O(n)\n";
+        << "Search time  : " << fixed << setprecision(4) << ms << " ms" << endl;
 }
 
-void LinkedList::searchByAgeGroup(int minAge, int maxAge) const {
+void LinkedList::searchByAgeGroupWithLinkedList(int minAge, int maxAge) const {
     string title = "Age " + to_string(minAge) + " to " + to_string(maxAge);
     int cnt = 0;
     auto t0 = chrono::high_resolution_clock::now();
@@ -293,7 +302,7 @@ void LinkedList::searchByAgeGroup(int minAge, int maxAge) const {
     printSearchFooter(cnt, chrono::duration<double, milli>(t1 - t0).count());
 }
 
-void LinkedList::searchByTransport(const string& mode) const {
+void LinkedList::searchByTransportWithLinkedList(const string& mode) const {
     int cnt = 0, shown = 0;
     auto t0 = chrono::high_resolution_clock::now();
     for (Node* cur = head; cur; cur = cur->next)
@@ -308,7 +317,7 @@ void LinkedList::searchByTransport(const string& mode) const {
     printSearchFooter(cnt, chrono::duration<double, milli>(t1 - t0).count());
 }
 
-void LinkedList::searchByDistance(double threshold) const {
+void LinkedList::searchByDistanceWithLinkedList(double threshold) const {
     string title = "Daily Distance > " + to_string(threshold) + " km";
     int cnt = 0;
     auto t0 = chrono::high_resolution_clock::now();
@@ -322,49 +331,7 @@ void LinkedList::searchByDistance(double threshold) const {
     printSearchFooter(cnt, chrono::duration<double, milli>(t1 - t0).count());
 }
 
-void LinkedList::searchByAgeBinary(int targetAge) const {
-    cout << "\n--- BINARY SEARCH: Age = " << targetAge << " ---\n";
-
-    Node** arr = new Node * [length];
-    int i = 0;
-    for (Node* cur = head; cur; cur = cur->next) arr[i++] = cur;
-
-    auto t0 = chrono::high_resolution_clock::now();
-    int lo = 0, hi = length - 1, found = -1;
-    while (lo <= hi) {
-        int mid = lo + (hi - lo) / 2;
-        if (arr[mid]->data.age == targetAge) { found = mid; break; }
-        else if (arr[mid]->data.age < targetAge)  lo = mid + 1;
-        else                                        hi = mid - 1;
-    }
-    auto t1 = chrono::high_resolution_clock::now();
-
-    if (found != -1) {
-        cout << "Match found!\n";
-        printHeader();
-        printRow(arr[found]->data);
-    }
-    else {
-        cout << "No resident found with age " << targetAge << ".\n";
-    }
-    cout << "Binary Search time: "
-        << fixed << setprecision(4)
-        << chrono::duration<double, milli>(t1 - t0).count() << " ms"
-        << "  |  Time complexity: O(log n)\n";
-    cout << "Note: requires list sorted by age first.\n";
-    delete[] arr;
-}
-
-string getAgeGroup(int age) {
-    if (age >= 6 && age <= 17)  return "Children & Teenagers (6-17)";
-    if (age >= 18 && age <= 25)  return "University Students / Young Adults (18-25)";
-    if (age >= 26 && age <= 45)  return "Working Adults Early Career (26-45)";
-    if (age >= 46 && age <= 60)  return "Working Adults Late Career (46-60)";
-    if (age >= 61 && age <= 100) return "Senior Citizens / Retirees (61-100)";
-    return "Unknown";
-}
-
-void LinkedList::ageGroupAnalysis() const {
+void LinkedList::ageGroupAnalysisWithLinkedList() const {
     static const int    N = 5;
     static const char* groupNames[N] = {
         "Children & Teenagers (6-17)",
@@ -435,8 +402,8 @@ void LinkedList::ageGroupAnalysis() const {
         << chrono::duration<double, milli>(t1 - t0).count() << " ms\n";
 }
 
-void LinkedList::printInsights() const {
-    static const int    N = 5;
+void LinkedList::printInsightsWithLinkedList() const {
+    static const int N = 5;
     static const char* groupNames[N] = {
         "Children & Teenagers (6-17)",
         "University Students / Young Adults (18-25)",
@@ -469,6 +436,7 @@ void LinkedList::printInsights() const {
     for (int g = 1; g < N; ++g)
         if (gs[g].total > gs[highestGroup].total) highestGroup = g;
 
+    // a. Emissions and mode preferences table
     cout << "\n========== INSIGHTS & RECOMMENDATIONS ==========\n"
         << string(72, '-') << "\n"
         << left << setw(40) << "Age Group"
@@ -488,36 +456,29 @@ void LinkedList::printInsights() const {
         cout << "\n";
     }
 
+    // b. Highest emitting group and car vs bicycle breakdown
     cout << string(72, '-') << "\n";
     cout << "\nKey Findings:\n";
     cout << "  1. Highest emitting group : " << groupNames[highestGroup]
         << " (" << fixed << setprecision(2) << gs[highestGroup].total << " kg CO2)\n";
 
-    int carIdx = 0, bikeIdx = 2;
-    cout << "  2. Car users vs Bicycle users by group:\n";
-    cout << "     " << left << setw(42) << "Age Group"
-        << setw(8) << "Car" << setw(10) << "Bicycle\n";
+    cout << "  2. Car vs Bicycle usage by age group:\n";
+    cout << "     " << left << setw(42) << "Age Group" << setw(8) << "Car" << setw(10) << "Bicycle\n";
     for (int g = 0; g < N; ++g)
         cout << "     " << left << setw(42) << groupNames[g]
-        << setw(8) << gs[g].mc[carIdx] << setw(10) << gs[g].mc[bikeIdx] << "\n";
+        << setw(8) << gs[g].mc[0] << setw(10) << gs[g].mc[2] << "\n";
 
-    cout << "\nRecommendations for City Planners:\n"
+    // c. Recommendations based on findings
+    cout << "\nRecommendations:\n"
         << string(72, '-') << "\n"
-        << "  - " << groupNames[highestGroup]
-        << " produce the most emissions.\n"
-        << "    Priority: subsidize public transport or carpooling for this group.\n"
-        << "  - Expand protected cycling infrastructure to shift car users\n"
-        << "    (especially ages 26-60) toward bicycles for short distances.\n"
-        << "  - Introduce school bus programs targeting the 6-17 age group\n"
-        << "    to reduce car trips by parents.\n"
-        << "  - Offer remote-work or flexible-hour incentives to Working Adults\n"
-        << "    to reduce total commuting days per month.\n"
+        << "  - " << groupNames[highestGroup] << " has the highest emissions.\n"
+        << "    Encourage carpooling or public transport for this group.\n"
+        << "  - Groups with high car usage should be targeted with\n"
+        << "    cycling infrastructure and incentives.\n"
         << string(72, '-') << "\n";
 }
 
-void LinkedList::searchByAgeBinary(int targetAge) const {
-    cout << "\n--- BINARY SEARCH: Age = " << targetAge << " ---\n";
-
+void LinkedList::searchByAgeBinaryWithLinkedList(int targetAge) const {
     Node** arr = new Node * [length];
     int i = 0;
     for (Node* cur = head; cur; cur = cur->next) arr[i++] = cur;
@@ -551,8 +512,6 @@ void LinkedList::searchByAgeBinary(int targetAge) const {
 
     cout << "Binary Search time: "
         << fixed << setprecision(4)
-        << chrono::duration<double, milli>(t1 - t0).count() << " ms"
-        << "  |  Time complexity: O(log n + k)\n";
-    cout << "Note: requires list sorted by age first.\n";
+        << chrono::duration<double, milli>(t1 - t0).count() << " ms" << endl;
     delete[] arr;
 }

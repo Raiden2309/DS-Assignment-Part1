@@ -3,242 +3,391 @@
 #include <limits>
 #include "Resident.hpp"
 #include "ArrayProcessor.hpp"
+#include "linked_list_quick_sort.hpp"
 
 using namespace std;
 
 void clearInput() {
-    cin.clear(); // Clear error flags
-	cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+	cin.clear();
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-//Helper function to display menu
-void displayMenu() {
-    cout << "\n==========================================================" << endl;
-    cout << "           CARBON EMISSION TRACKING SYSTEM                " << endl;
-    cout << "==========================================================" << endl;
-    cout << "1. View Carbon Emission Analysis" << endl;
-    cout << "2. Sort City Data" << endl;
-    cout << "3. Search City Data" << endl;
-    cout << "4. Exit Program" << endl;
-    cout << "==========================================================" << endl;
-    cout << "Enter your choice (1-4): ";
+void displayMenu(bool useLinkedList) {
+	const string label = useLinkedList ? "LINKED LIST" : "ARRAY";
+	cout << "\n==========================================================" << endl;
+	cout << "    CARBON EMISSION TRACKING SYSTEM  [" << label << "]      " << endl;
+	cout << "==========================================================" << endl;
+	cout << "1. View Carbon Emission Analysis" << endl;
+	cout << "2. Sort City Data" << endl;
+	cout << "3. Search City Data" << endl;
+	cout << "4. Return to Main Menu" << endl;
+	cout << "==========================================================" << endl;
+	cout << "Enter your choice (1-4): ";
 }
 
 int selectCityMenu(bool allowAllOption = false) {
-    int choice = 0;
-    while (true) {
+	int choice = 0;
+	while (true) {
 		cout << "\n --- Select City ---" << endl;
-        cout << "1. City A" << endl;
-        cout << "2. City B" << endl;
+		cout << "1. City A" << endl;
+		cout << "2. City B" << endl;
 		cout << "3. City C" << endl;
 		if (allowAllOption) cout << "4. All Cities" << endl;
 		cout << "Enter your choice: ";
 
 		cin >> choice;
-		if (cin.fail() || choice < 1 || choice > (allowAllOption ? 4 : 3)){
-            clearInput();
-            cout << "Invalid input. Please enter a number between 1 and 3." << endl;
-        } else {
-            return choice;
-        }
-    }
+		if (cin.fail() || choice < 1 || choice >(allowAllOption ? 4 : 3)) {
+			clearInput();
+			cout << "Invalid input. Please enter a valid number." << endl;
+		}
+		else {
+			return choice;
+		}
+	}
 }
 
-//Returns a pointer to target the correct array
-Dataset* getCityPointer(int choice, Dataset& cityA, Dataset& cityB, Dataset& cityC) {
-	if (choice == 1) return &cityA;
-	if (choice == 2) return &cityB;
-	if (choice == 3) return &cityC;
-    return nullptr;
+Dataset* getCityArray(int choice, Dataset& a, Dataset& b, Dataset& c) {
+	if (choice == 1) return &a;
+	if (choice == 2) return &b;
+	if (choice == 3) return &c;
+	return nullptr;
 }
+
+LinkedList* getCityLL(int choice, LinkedList& a, LinkedList& b, LinkedList& c) {
+	if (choice == 1) return &a;
+	if (choice == 2) return &b;
+	if (choice == 3) return &c;
+	return nullptr;
+}
+
+static const int AGE_MIN[] = { 6, 18, 26, 46, 61 };
+static const int AGE_MAX[] = { 17, 25, 45, 60, 100 };
 
 int main() {
-    //Initialize datasets
-    Dataset cityA, cityB, cityC;
-    cityA.cityName = "City A";
-    cityB.cityName = "City B";
-    cityC.cityName = "City C";
 
-    cout << "Loading datasets into dynamic arrays..." << endl;
+	bool running = true;
 
-    // Call functions defined in ArrayProcessor.cpp
-    loadCSV("dataset1-cityA.csv", cityA);
-    loadCSV("dataset2-cityB.csv", cityB);
-    loadCSV("dataset3-cityC.csv", cityC);
+	while (running) {
 
-    cout << "Loading complete.\n" << endl;
+		int dsChoice = 0;
+		cout << "\n==========================================================" << endl;
+		cout << "         CARBON EMISSION TRACKING SYSTEM                  " << endl;
+		cout << "==========================================================" << endl;
+		cout << "Select Data Structure:" << endl;
+		cout << "1. Array" << endl;
+		cout << "2. Linked List" << endl;
+		cout << "3. Exit Program" << endl;
+		cout << "==========================================================" << endl;
+		cout << "Enter your choice (1-3): ";
 
-    bool isCitySortedByAge[3] = { false, false, false }; //Flag to track if a city is sorted for binary search
+		while (true) {
+			cin >> dsChoice;
+			if (!cin.fail() && dsChoice >= 1 && dsChoice <= 3) break;
+			clearInput();
+			cout << "Invalid. Enter 1 (Array), 2 (Linked List), or 3 (Exit): ";
+		}
 
-    //Interactive Menu Loop
-    int mainChoice = 0;
-    do {
-		displayMenu();
-        cin >> mainChoice;
+		if (dsChoice == 3) {
+			cout << "\nExiting program. Goodbye!" << endl;
+			break;
+		}
 
-		//Input validation
-        if (cin.fail()) {
-            cin.clear(); //Clear error flag
-			cin.ignore(numeric_limits<streamsize>::max(), '\n'); //Discard invalid input
-            cout<<"Invalid input. Please enter a number between 1 and 6." << endl;
-			continue; // Restart loop for valid input
-        } 
+		const bool useLinkedList = (dsChoice == 2);
 
-        switch (mainChoice) {
-            case 1: {
-                //View Analysis
-                int cityChoice = selectCityMenu(true);
+		cout << "\n----------------------------------------------------------" << endl;
+		cout << "  Data Structure Selected: "
+			<< (useLinkedList ? "Linked List" : "Array") << endl;
+		cout << "----------------------------------------------------------" << endl;
+		cout << "\nLoading datasets..." << endl;
 
-                int ageChoice = 0;
-                cout << "\n --- Select Age Group ---" << endl;
-                cout << "1. 6 - 17" << endl;
-                cout << "2. 18 -25" << endl;
-                cout << "3. 26 - 45" << endl;
-                cout << "4. 46 - 60" << endl;
-                cout << "5. 61 - 100" << endl;
-                cout << "6. All Age Groups" << endl;
-                cout << "Choice: ";
-                cin >> ageChoice;
+		Dataset    arrA, arrB, arrC;
+		LinkedList llA, llB, llC;
 
-                int targetIdx = (ageChoice >= 1 && ageChoice <= 5) ? ageChoice - 1 : -1;
+		if (useLinkedList) {
+			llA.loadFromCSVWithLinkedList("dataset1-cityA.csv", "City A");
+			llB.loadFromCSVWithLinkedList("dataset2-cityB.csv", "City B");
+			llC.loadFromCSVWithLinkedList("dataset3-cityC.csv", "City C");
+		}
+		else {
+			arrA.cityName = "City A";
+			arrB.cityName = "City B";
+			arrC.cityName = "City C";
+			loadCSV("dataset1-cityA.csv", arrA);
+			loadCSV("dataset2-cityB.csv", arrB);
+			loadCSV("dataset3-cityC.csv", arrC);
+		}
 
-                if (cityChoice == 4) {
-                    analyzeAndPrintEmissions(cityA, targetIdx);
-                    analyzeAndPrintEmissions(cityB, targetIdx);
-                    analyzeAndPrintEmissions(cityC, targetIdx);
-                }
-                else {
-                    analyzeAndPrintEmissions(*getCityPointer(cityChoice, cityA, cityB, cityC), targetIdx);
-                }
-                break;
-            }
-            case 2: {
-                //Sorting
-                int cityChoice = selectCityMenu(false);
-                Dataset* cityPtr = getCityPointer(cityChoice, cityA, cityB, cityC);
+		cout << "Loading complete.\n" << endl;
 
-                int modeChoice = 0;
-                cout << "\n --- Sorting Mode ---" << endl;
-                cout << "1. Express Sort (Auto selects optimal method)" << endl;
-                cout << "2. Custom Sort (Manual config)" << endl;
-                cout << "Enter your choice: ";
-                cin >> modeChoice;
+		bool sortedByAge[3] = { false, false, false };
 
-                if (modeChoice == 1) {
-                    int expressTarget;
-                    cout << " Sort by: 1 Age (Young to Old) | 2. Emission (High to Low): ";
-                    cin >> expressTarget;
+		int mainChoice = 0;
+		do {
+			displayMenu(useLinkedList);
+			cin >> mainChoice;
 
-                    //Smart Selection Logic: Check Dataset Size
-                    bool useInsertion = (cityPtr->size < 50);
+			if (cin.fail()) {
+				clearInput();
+				cout << "Invalid input. Please enter a number between 1 and 4." << endl;
+				continue;
+			}
 
-                    if (useInsertion) {
-                        cout << "Small dataset detected (" << cityPtr->size << " items). Auto-selecting Insertion Sort." << endl;
-                        if (expressTarget == 1) {
-                            insertionSort(*cityPtr, 1, true); //Age, Ascending
-                            isCitySortedByAge[cityChoice - 1] = true;
-                        }
-                        else {
-                            insertionSort(*cityPtr, 2, false); //Emission, Descending
-                            isCitySortedByAge[cityChoice - 1] = false;
-                        }
-                    }
-                    else {
-                        cout << "Large dataset detected (" << cityPtr->size << " items). Auto-selecting Insertion Sort." << endl;
-                        if (expressTarget == 1) {
-                            quickSort(*cityPtr, 1, true); //Age, Ascending
-                            isCitySortedByAge[cityChoice - 1] = true;
-                        }
-                        else {
-                            quickSort(*cityPtr, 2, false); //Emission, Descending
-                            isCitySortedByAge[cityChoice - 1] = false;
-                        }
-                    }
-                    printTop5(*cityPtr);
-                }
-                else if (modeChoice == 2) {
-                    int algo, field, dir;
+			switch (mainChoice) {
 
-                    cout << "Algorithm (1. Quick Sort | 2. Insertion Sort): ";
-                    cin >> algo;
-                    cout << "Target Field (1. Age | 2. Total Emission): ";
-                    cin >> field;
-                    cout << "Direction (1. Ascending | 2. Descending):";
-                    cin >> dir;
+			case 1: {
+				int cityChoice = selectCityMenu(true);
+				const string cityNames[] = { "City A", "City B", "City C", "All Cities" };
+				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
 
-                    bool isAscending = (dir == 1);
+				int ageChoice = 0;
+				cout << "\n --- Select Age Group ---" << endl;
+				cout << "1. 6  - 17" << endl;
+				cout << "2. 18 - 25" << endl;
+				cout << "3. 26 - 45" << endl;
+				cout << "4. 46 - 60" << endl;
+				cout << "5. 61 - 100" << endl;
+				cout << "6. All Age Groups" << endl;
+				if (useLinkedList) {
+					cout << "7. Dataset Summary" << endl;
+					cout << "8. Insights & Recommendations" << endl;
+				}
+				cout << "Choice: ";
+				cin >> ageChoice;
 
-                    if (algo == 1) {
-                        quickSort(*cityPtr, field, isAscending);
-                    }
-                    else {
-                        insertionSort(*cityPtr, field, isAscending);
-                    }
+				const string ageNames[] = {
+					"6 - 17", "18 - 25", "26 - 45",
+					"46 - 60", "61 - 100", "All Age Groups",
+					"Dataset Summary", "Insights & Recommendations"
+				};
+				if (ageChoice >= 1 && ageChoice <= 8)
+					cout << "  >> Selected: " << ageNames[ageChoice - 1] << endl;
 
-                    if (field == 1 && isAscending) {
-                        isCitySortedByAge[cityChoice - 1] = true;
-                    }
-                    else {
-                        isCitySortedByAge[cityChoice - 1] = false;
-                    }
-                    printTop5(*cityPtr);
-                }
-                break;
-            }
+				if (useLinkedList) {
+					auto runLL = [&](LinkedList& ll) {
+						if (ageChoice >= 1 && ageChoice <= 5)
+							ll.searchByAgeGroupWithLinkedList(AGE_MIN[ageChoice - 1], AGE_MAX[ageChoice - 1]);
+						else if (ageChoice == 6)
+							ll.ageGroupAnalysisWithLinkedList();
+						else if (ageChoice == 7)
+							ll.printDatasetSummaryWithLinkedList();
+						else if (ageChoice == 8)
+							ll.printInsightsWithLinkedList();
+						};
+					if (cityChoice == 4) { runLL(llA); runLL(llB); runLL(llC); }
+					else                   runLL(*getCityLL(cityChoice, llA, llB, llC));
+				}
+				else {
+					int targetIdx = (ageChoice >= 1 && ageChoice <= 5) ? ageChoice - 1 : -1;
+					if (cityChoice == 4) {
+						analyzeAndPrintEmissions(arrA, targetIdx);
+						analyzeAndPrintEmissions(arrB, targetIdx);
+						analyzeAndPrintEmissions(arrC, targetIdx);
+					}
+					else {
+						analyzeAndPrintEmissions(*getCityArray(cityChoice, arrA, arrB, arrC), targetIdx);
+					}
+				}
+				break;
+			}
 
-            case 3: {
-                //Searching
-                int cityChoice = selectCityMenu(false);
-                Dataset* cityPtr = getCityPointer(cityChoice, cityA, cityB, cityC);
+			case 2: {
+				int cityChoice = selectCityMenu(false);
+				const string cityNames[] = { "City A", "City B", "City C" };
+				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
 
-                int searchChoice = 0;
-                cout << "\n --- Select Search Algorithm ---" << endl;
-                cout << "1. Find residents by Transport Mode" << endl;
-                cout << "2. Find residents by Age" << endl;
-                cout << "Enter your Choice: ";
-                cin >> searchChoice;
+				if (useLinkedList) {
+					LinkedList* llPtr = getCityLL(cityChoice, llA, llB, llC);
 
-                if (searchChoice == 1) {
-                    string mode;
-                    cout << "Enter Transport Mode (Car, Bus, Bicycle, Walking, School Bus, Carpool): ";
-                    clearInput();
-                    getline(cin, mode);
-                    searchByTransportMode(*cityPtr, mode);
-                }
-                else if (searchChoice == 2) {
-                    //Safety: Binary Search needs sorted data;
-                    if (!isCitySortedByAge[cityChoice - 1]) {
-                        cout << "Warning: Binary Search requires data sorted by age." << endl;
-                        cout << "Auto-sorting " << cityPtr->cityName << "using Insertion Sort..." << endl;
-                        insertionSort(*cityPtr, 1, true); //Sort by Age, Ascending
-                        isCitySortedByAge[cityChoice - 1] = true;
-                    }
+					int field;
+					cout << "\n --- Select Sort Field ---" << endl;
+					cout << "1. Age" << endl;
+					cout << "2. Daily Distance" << endl;
+					cout << "3. Total Emission" << endl;
+					cout << "Enter your choice: ";
+					cin >> field;
 
-                    int targetAge;
-                    cout << "Enter exact Age to search for: ";
-                    cin >> targetAge;
-                    searchByAgeBinary(*cityPtr, targetAge);
-                }
-                break;
+					SortKey key = BY_AGE;
+					if (field == 2) key = BY_DAILY_DISTANCE;
+					else if (field == 3) key = BY_CARBON_EMISSION;
 
-            }
-            case 4: {
-                cout << "\n Exiting Program..." << endl;
-                break;
-            }
-            default: {
-                //Default case for bad inputs
-                cout << "\nInvalid Choice. Please select an option from the menu." << endl;
-                break;
-            }
-        }
+					const string keyNames[] = { "Age", "Daily Distance", "Carbon Emission" };
+					cout << "  >> Sorting " << cityNames[cityChoice - 1]
+						<< " by " << keyNames[key] << " (Ascending)" << endl;
 
-    } while (mainChoice != 4);
+					llPtr->sortWithLinkedList(key);
+					sortedByAge[cityChoice - 1] = (key == BY_AGE);
+					llPtr->printTop5WithLinkedList();
 
-    // Memory cleanup
-    delete[] cityA.data;
-    delete[] cityB.data;
-    delete[] cityC.data;
+				}
+				else {
+					Dataset* cityPtr = getCityArray(cityChoice, arrA, arrB, arrC);
 
-    return 0;
+					int modeChoice = 0;
+					cout << "\n --- Sorting Mode ---" << endl;
+					cout << "1. Express Sort (Auto selects optimal method)" << endl;
+					cout << "2. Custom Sort  (Manual config)" << endl;
+					cout << "Enter your choice: ";
+					cin >> modeChoice;
+
+					if (modeChoice == 1) {
+						int expressTarget;
+						cout << "Sort by: 1. Age (Young to Old) | 2. Emission (High to Low): ";
+						cin >> expressTarget;
+
+						bool useInsertion = (cityPtr->size < 50);
+						const string algoName = useInsertion ? "Insertion Sort" : "Quick Sort";
+						const string fieldName = (expressTarget == 1) ? "Age (Ascending)" : "Emission (Descending)";
+						cout << "  >> " << cityNames[cityChoice - 1]
+							<< " | Algorithm: " << algoName
+							<< " | Field: " << fieldName << endl;
+
+						if (useInsertion) {
+							if (expressTarget == 1) { insertionSort(*cityPtr, 1, true);  sortedByAge[cityChoice - 1] = true; }
+							else { insertionSort(*cityPtr, 2, false); sortedByAge[cityChoice - 1] = false; }
+						}
+						else {
+							if (expressTarget == 1) { quickSort(*cityPtr, 1, true);  sortedByAge[cityChoice - 1] = true; }
+							else { quickSort(*cityPtr, 2, false); sortedByAge[cityChoice - 1] = false; }
+						}
+						printTop5(*cityPtr);
+
+					}
+					else {
+						int algo, field, dir;
+						cout << "Algorithm (1. Quick Sort | 2. Insertion Sort): ";
+						cin >> algo;
+						cout << "Target Field (1. Age | 2. Total Emission): ";
+						cin >> field;
+						cout << "Direction (1. Ascending | 2. Descending): ";
+						cin >> dir;
+
+						bool isAscending = (dir == 1);
+						const string algoName = (algo == 1) ? "Quick Sort" : "Insertion Sort";
+						const string fieldName = (field == 1) ? "Age" : "Total Emission";
+						const string dirName = isAscending ? "Ascending" : "Descending";
+						cout << "  >> " << cityNames[cityChoice - 1]
+							<< " | Algorithm: " << algoName
+							<< " | Field: " << fieldName
+							<< " | Direction: " << dirName << endl;
+
+						if (algo == 1) quickSort(*cityPtr, field, isAscending);
+						else           insertionSort(*cityPtr, field, isAscending);
+
+						sortedByAge[cityChoice - 1] = (field == 1 && isAscending);
+						printTop5(*cityPtr);
+					}
+				}
+				break;
+			}
+
+			case 3: {
+				int cityChoice = selectCityMenu(false);
+				const string cityNames[] = { "City A", "City B", "City C" };
+				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
+
+				// FIX 1: 'searchChoice' was re-declared inside the if(useLinkedList) block,
+				// shadowing the outer one. The outer declaration is now used for both branches.
+				int searchChoice = 0;
+				cout << "\n --- Select Search Algorithm ---" << endl;
+				if (useLinkedList) {
+					cout << "1. Find residents by Transport Mode (Linear)" << endl;
+					cout << "2. Find residents by Age (Binary)" << endl;
+					cout << "3. Find residents by Daily Distance Threshold (Linear)" << endl;
+				}
+				else {
+					cout << "1. Find residents by Transport Mode (Linear)" << endl;
+					cout << "2. Find residents by Age (Binary)" << endl;
+				}
+				cout << "Enter your choice: ";
+				cin >> searchChoice;
+
+				if (useLinkedList) {
+					// FIX 2: The else (array) branch was nested inside the if(useLinkedList)
+					// block, making it unreachable. Moved outside below.
+					LinkedList* llPtr = getCityLL(cityChoice, llA, llB, llC);
+
+					if (searchChoice == 1) {
+						string mode;
+						cout << "Enter Transport Mode (Car, Bus, Bicycle, Walking, School Bus, Carpool): ";
+						clearInput();
+						getline(cin, mode);
+						cout << "  >> Linear Search | " << cityNames[cityChoice - 1]
+							<< " | Transport: " << mode << endl;
+						llPtr->searchByTransportWithLinkedList(mode);
+
+					}
+					else if (searchChoice == 2) {
+						if (!sortedByAge[cityChoice - 1]) {
+							cout << "Warning: Binary Search requires data sorted by age." << endl;
+							cout << "Auto-sorting using Linked List Quick Sort..." << endl;
+							llPtr->sortWithLinkedList(BY_AGE);
+							sortedByAge[cityChoice - 1] = true;
+						}
+						int targetAge;
+						cout << "Enter exact Age to search for: ";
+						cin >> targetAge;
+						cout << "  >> Binary Search | " << cityNames[cityChoice - 1]
+							<< " | Age: " << targetAge << endl;
+						llPtr->searchByAgeBinaryWithLinkedList(targetAge);
+
+					}
+					else if (searchChoice == 3) {
+						double threshold;
+						cout << "Enter Daily Distance threshold in km (e.g. 15): ";
+						cin >> threshold;
+						cout << "  >> Linear Search | " << cityNames[cityChoice - 1]
+							<< " | Distance > " << threshold << " km" << endl;
+						llPtr->searchByDistanceWithLinkedList(threshold);
+					}
+				}
+				else {
+					// Array search branch — was previously trapped inside useLinkedList block
+					Dataset* cityPtr = getCityArray(cityChoice, arrA, arrB, arrC);
+
+					if (searchChoice == 1) {
+						string mode;
+						cout << "Enter Transport Mode (Car, Bus, Bicycle, Walking, School Bus, Carpool): ";
+						clearInput();
+						getline(cin, mode);
+						cout << "  >> Linear Search | " << cityNames[cityChoice - 1]
+							<< " | Transport: " << mode << endl;
+						searchByTransportMode(*cityPtr, mode);
+
+					}
+					else if (searchChoice == 2) {
+						if (!sortedByAge[cityChoice - 1]) {
+							cout << "Warning: Binary Search requires data sorted by age." << endl;
+							cout << "Auto-sorting using Insertion Sort..." << endl;
+							insertionSort(*cityPtr, 1, true);
+							sortedByAge[cityChoice - 1] = true;
+						}
+						int targetAge;
+						cout << "Enter exact Age to search for: ";
+						cin >> targetAge;
+						cout << "  >> Binary Search | " << cityNames[cityChoice - 1]
+							<< " | Age: " << targetAge << endl;
+						searchByAgeBinary(*cityPtr, targetAge);
+					}
+				}
+				break;
+			}
+
+			case 4:
+				cout << "\nReturning to Main Menu..." << endl;
+				break;
+
+			default:
+				cout << "\nInvalid choice. Please select an option from the menu." << endl;
+				break;
+			}
+
+		} while (mainChoice != 4);
+
+		if (!useLinkedList) {
+			delete[] arrA.data;
+			delete[] arrB.data;
+			delete[] arrC.data;
+		}
+	}
+	return 0;
 }
