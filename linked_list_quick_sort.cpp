@@ -17,6 +17,10 @@ LinkedList::~LinkedList() {
     linkedListCount = 0;
 }
 
+const std::string LinkedList::TRANSPORT_MODES[6] = {
+    "Car", "Bus", "Bicycle", "Walking", "School Bus", "Carpool"
+};
+
 // Linkedlist with 3-way Partitioning Quick Sort implementation
 // Dutch National Flag but with LinkedList
 
@@ -24,27 +28,14 @@ void LinkedList::appendWithLinkedList(const Resident& resident) {
     Node* newNode = new Node(resident);
     if (head == nullptr) {
         head = newNode;
-        linkedListCount++;
-        return;
     }
-    Node* current = head;
-    while (current->next)
-        current = current->next;
-    current->next = newNode;
+    else {
+        Node* current = head;
+        while (current->next)
+            current = current->next;
+        current->next = newNode;
+    }
     linkedListCount++;
-}
-
-void LinkedList::buildUniqueTransportsWithLinkedList() {
-    uniqueTransportCount = 0;
-    for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
-        const std::string& mode = currentNode->data->modeOfTransport;
-        bool found = false;
-        for (int i = 0; i < uniqueTransportCount; ++i) {
-            if (uniqueTransports[i] == mode) { found = true; break; }
-        }
-        if (!found && uniqueTransportCount < 20)
-            uniqueTransports[uniqueTransportCount++] = mode;
-    }
 }
 
 bool LinkedList::loadFromCSVWithLinkedList(const string& filename, const string& label) {
@@ -81,16 +72,11 @@ bool LinkedList::loadFromCSVWithLinkedList(const string& filename, const string&
     }
     cout << "Loaded " << linkedListCount << " residents from '" << filename << "'";
     if (!label.empty()) cout << " [" << label << "]\n";
-    buildUniqueTransportsWithLinkedList();
     return true;
 }
 
 int LinkedList::getlinkedListCountWithLinkedList() const { 
     return linkedListCount; 
-}
-
-double LinkedList::getAbsolute(double val) const {
-    return (val < 0) ? -val : val;
 }
 
 double LinkedList::getSortKeyWithLinkedList(const Resident& resident, SortKey sortKey) {
@@ -151,27 +137,30 @@ void LinkedList::threeWayPartitionWithLinkedList(Node* start, Node* end,
 void LinkedList::quickSortHelperWithLinkedList(Node* start, Node* end) {
     if (!start || start == end) return;
 
+    // Find midpoint for median-of-three pivot selection
     Node* slow = start;
     Node* fast = start;
     while (fast != end && fast->next != end) {
         slow = slow->next;
         fast = fast->next->next;
     }
-    Node* mid = slow;
-
-    medianOfThreeWithLinkedList(start, mid, end);
+    medianOfThreeWithLinkedList(start, slow, end);
 
     Node* lessThanBoundary;
     Node* greaterThanBoundary;
     threeWayPartitionWithLinkedList(start, end, lessThanBoundary, greaterThanBoundary);
 
-    Node* leftEnd = lessThanBoundary;
-    Node* rightStart = greaterThanBoundary;
-
-    if (leftEnd != start)
+    // Left partition: everything BEFORE the equal-to-pivot section
+    if (lessThanBoundary != start) {
+        Node* leftEnd = start;
+        while (leftEnd->next != lessThanBoundary) leftEnd = leftEnd->next;
         quickSortHelperWithLinkedList(start, leftEnd);
-    if (rightStart != end)
-        quickSortHelperWithLinkedList(rightStart, end);
+    }
+
+    // Right partition: everything AFTER the equal-to-pivot section
+    if (greaterThanBoundary != end) {
+        quickSortHelperWithLinkedList(greaterThanBoundary->next, end);
+    }
 }
 
 void LinkedList::sortWithLinkedList(SortKey sortKey) {
@@ -190,177 +179,6 @@ void LinkedList::sortWithLinkedList(SortKey sortKey) {
     cout << "Sort by " << keyNames[sortKey] << " completed in "
         << fixed << setprecision(4)
         << chrono::duration<double, milli>(endTime - startTime).count() << " ms\n";
-}
-
-static void printTableHeader() {
-    cout << "\n"
-        << left << setw(14) << "ResidentID"
-        << setw(6) << "Age"
-        << setw(12) << "Transport"
-        << right << setw(10) << "Dist(km)"
-        << setw(16) << "EmissionFactor"
-        << setw(6) << "Days"
-        << setw(22) << "TotalMonthlyEmissions\n"
-        << string(82, '-') << "\n";
-}
-
-void LinkedList::printMemoryUsageWithLinkedList() const {
-    size_t totalMemory = (sizeof(Node) + sizeof(Resident)) * linkedListCount;
-    cout << "Structure Memory Usage: " << linkedListCount << " nodes x "
-        << "(" << sizeof(Node) << " + " << sizeof(Resident) << ") bytes = "
-        << totalMemory << " bytes ("
-        << fixed << setprecision(2) << totalMemory / 1024.0 << " KB)\n";
-}
-
-static void printResidentRow(const Resident& resident) {
-    cout << left << setw(14) << resident.residentID
-        << setw(6) << resident.age
-        << setw(12) << resident.modeOfTransport
-        << right << setw(10) << fixed << setprecision(2) << resident.dailyDistance
-        << setw(16) << resident.carbonEmissionFactor
-        << setw(6) << resident.avgDaysPerMonth
-        << setw(22) << resident.totalMonthlyEmissions << "\n";
-}
-
-void LinkedList::printWithLinkedList() const {
-    printTableHeader();
-    for (Node* currentNode = head; currentNode; currentNode = currentNode->next)
-        printResidentRow(*currentNode->data);
-}
-
-void LinkedList::printTop5WithLinkedList() const {
-    cout << "\nTop 5 Highest Emitters:\n"
-        << left << setw(15) << "Resident ID"
-        << setw(10) << "Age"
-        << setw(20) << "Mode of Transport"
-        << "Total Emission\n"
-        << string(65, '-') << "\n";
-
-    int skipCount = (linkedListCount > 5) ? (linkedListCount - 5) : 0;
-    Node* currentNode = head;
-    for (int i = 0; i < skipCount; ++i) currentNode = currentNode->next;
-
-    while (currentNode) {
-        cout << left << setw(15) << currentNode->data->residentID
-            << setw(10) << currentNode->data->age
-            << setw(20) << currentNode->data->modeOfTransport
-            << fixed << setprecision(2) << currentNode->data->totalMonthlyEmissions << " kg CO2\n";
-        currentNode = currentNode->next;
-    }
-}
-
-void LinkedList::printDatasetSummaryWithLinkedList() const {
-    double modeEmissionTotals[20] = {};
-    int    modeResidentCounts[20] = {};
-    double grandTotalEmissions = 0;
-
-    for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
-        grandTotalEmissions += currentNode->data->totalMonthlyEmissions;
-        for (int i = 0; i < uniqueTransportCount; ++i) {
-            if (currentNode->data->modeOfTransport == uniqueTransports[i]) {
-                modeEmissionTotals[i] += currentNode->data->totalMonthlyEmissions;
-                ++modeResidentCounts[i];
-                break;
-            }
-        }
-    }
-
-    string label = cityLabel.empty() ? "All Datasets" : cityLabel;
-    cout << "\n===== Carbon Emission Summary [" << label << "] =====\n"
-        << string(60, '-') << "\n"
-        << left << setw(18) << "Mode of Transport"
-        << right << setw(8) << "Count"
-        << setw(20) << "Total CO2 (kg)"
-        << setw(18) << "Avg CO2/User\n"
-        << string(60, '-') << "\n";
-
-    for (int i = 0; i < uniqueTransportCount; ++i) {
-        if (modeResidentCounts[i] == 0) continue;
-        cout << left << setw(18) << uniqueTransports[i]
-            << right << setw(8) << modeResidentCounts[i]
-            << fixed << setprecision(2)
-            << setw(20) << modeEmissionTotals[i]
-            << setw(18) << modeEmissionTotals[i] / modeResidentCounts[i] << "\n";
-    }
-
-    cout << string(60, '-') << "\n"
-        << "Total Residents  : " << linkedListCount << "\n"
-        << "Total CO2 (month): " << fixed << setprecision(2) << grandTotalEmissions << " kg\n"
-        << "Avg CO2/Resident : " << (linkedListCount > 0 ? grandTotalEmissions / linkedListCount : 0.0) << " kg\n"
-        << string(60, '-') << "\n";
-}
-
-static void printSearchHeader(const string& searchTitle) {
-    cout << "\nSearch Results - " << searchTitle << "\n"
-        << string(82, '-') << "\n"
-        << left << setw(14) << "ResidentID"
-        << setw(6) << "Age"
-        << setw(12) << "Transport"
-        << right << setw(10) << "Dist(km)"
-        << setw(16) << "EmissionFactor"
-        << setw(6) << "Days"
-        << setw(22) << "TotalMonthlyEmissions\n"
-        << string(82, '-') << "\n";
-}
-
-static void printSearchFooter(int matchCount, double elapsedMs, size_t stackMem) {
-    cout << string(82, '-') << "\n"
-        << "Total matches: " << matchCount << "\n"
-        << "Search time  : " << fixed << setprecision(4) << elapsedMs << " ms\n"
-        << "Search Memory: " << stackMem << " bytes (stack/local pointers)\n";
-}
-
-void LinkedList::searchByAgeGroupWithLinkedList(int minAge, int maxAge) const {
-    string searchTitle = "Age " + to_string(minAge) + " to " + to_string(maxAge);
-    int matchCount = 0;
-    size_t stackUsage = sizeof(Node*) + sizeof(int) + sizeof(chrono::steady_clock::time_point) * 2;
-
-    auto startTime = chrono::high_resolution_clock::now();
-    printSearchHeader(searchTitle);
-    for (Node* currentNode = head; currentNode; currentNode = currentNode->next)
-        if (currentNode->data->age >= minAge && currentNode->data->age <= maxAge) {
-            printResidentRow(*currentNode->data);
-            ++matchCount;
-        }
-    auto endTime = chrono::high_resolution_clock::now();
-
-    printSearchFooter(matchCount, chrono::duration<double, milli>(endTime - startTime).count(), stackUsage);
-}
-
-void LinkedList::searchByTransportWithLinkedList(const string& transportMode) const {
-    int matchCount = 0;
-    size_t stackUsage = sizeof(Node*) + sizeof(int) + sizeof(chrono::steady_clock::time_point) * 2;
-
-    cout << "LINEAR SEARCH: Transport = '" << transportMode << "'\n";
-    printSearchHeader("Transport: " + transportMode);
-
-    auto startTime = chrono::high_resolution_clock::now();
-    for (Node* currentNode = head; currentNode; currentNode = currentNode->next)
-        if (currentNode->data->modeOfTransport == transportMode) {
-            if (matchCount < 5) printResidentRow(*currentNode->data);
-            ++matchCount;
-        }
-    auto endTime = chrono::high_resolution_clock::now();
-
-    printSearchFooter(matchCount, chrono::duration<double, milli>(endTime - startTime).count(), stackUsage);
-}
-
-void LinkedList::searchByDistanceWithLinkedList(double distanceThreshold) const {
-    string searchTitle = "Daily Distance > " + to_string(distanceThreshold) + " km";
-    int matchCount = 0;
-    size_t stackUsage = sizeof(Node*) + sizeof(int) + sizeof(chrono::steady_clock::time_point) * 2;
-
-    printSearchHeader(searchTitle);
-
-    auto startTime = chrono::high_resolution_clock::now();
-    for (Node* currentNode = head; currentNode; currentNode = currentNode->next)
-        if (currentNode->data->dailyDistance > distanceThreshold) {
-            printResidentRow(*currentNode->data);
-            ++matchCount;
-        }
-    auto endTime = chrono::high_resolution_clock::now();
-
-    printSearchFooter(matchCount, chrono::duration<double, milli>(endTime - startTime).count(), stackUsage);
 }
 
 void LinkedList::ageGroupAnalysisWithLinkedList() const {
@@ -385,13 +203,13 @@ void LinkedList::ageGroupAnalysisWithLinkedList() const {
     auto startTime = chrono::high_resolution_clock::now();
     for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
         int residentAge = currentNode->data->age;
-        for (int groupIndex = 0; groupIndex < GROUP_COUNT; ++groupIndex) {
+        for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
             if (residentAge < groupMinAge[groupIndex] || residentAge > groupMaxAge[groupIndex]) continue;
             groupStats[groupIndex].totalEmissions += currentNode->data->totalMonthlyEmissions;
-            ++groupStats[groupIndex].residentCount;
-            for (int i = 0; i < uniqueTransportCount; ++i) {
-                if (currentNode->data->modeOfTransport == uniqueTransports[i]) {
-                    ++groupStats[groupIndex].modeCount[i];
+            groupStats[groupIndex].residentCount++;
+            for (int i = 0; i < TRANSPORT_COUNT; i++) {
+                if (currentNode->data->modeOfTransport == TRANSPORT_MODES[i]) {
+                    groupStats[groupIndex].modeCount[i]++;
                     groupStats[groupIndex].modeEmissions[i] += currentNode->data->totalMonthlyEmissions;
                     break;
                 }
@@ -404,9 +222,9 @@ void LinkedList::ageGroupAnalysisWithLinkedList() const {
     string label = cityLabel.empty() ? "All Datasets" : cityLabel;
     cout << "Age Group Analysis [" << label << "]\n";
 
-    for (int groupIndex = 0; groupIndex < GROUP_COUNT; ++groupIndex) {
+    for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
         int dominantModeIndex = 0;
-        for (int i = 1; i < uniqueTransportCount; ++i)
+        for (int i = 1; i < TRANSPORT_COUNT; i++)
             if (groupStats[groupIndex].modeCount[i] > groupStats[groupIndex].modeCount[dominantModeIndex])
                 dominantModeIndex = i;
 
@@ -418,9 +236,9 @@ void LinkedList::ageGroupAnalysisWithLinkedList() const {
             << setw(20) << "Avg CO2/Resident\n"
             << string(72, '-') << "\n";
 
-        for (int i = 0; i < uniqueTransportCount; ++i) {
+        for (int i = 0; i < TRANSPORT_COUNT; i++) {
             if (groupStats[groupIndex].modeCount[i] == 0) continue;
-            cout << left << setw(18) << uniqueTransports[i]
+            cout << left << setw(18) << TRANSPORT_MODES[i]
                 << right << setw(7) << groupStats[groupIndex].modeCount[i]
                 << fixed << setprecision(2)
                 << setw(20) << groupStats[groupIndex].modeEmissions[i]
@@ -433,7 +251,7 @@ void LinkedList::ageGroupAnalysisWithLinkedList() const {
             : 0.0;
 
         cout << string(72, '-') << "\n"
-            << "Most Preferred Transport : " << uniqueTransports[dominantModeIndex] << "\n"
+            << "Most Preferred Transport : " << TRANSPORT_MODES[dominantModeIndex] << "\n"
             << "Total Emission           : " << fixed << setprecision(2)
             << groupStats[groupIndex].totalEmissions << " kg CO2\n"
             << "Average Emission         : " << averageEmission << " kg CO2/resident\n"
@@ -441,6 +259,105 @@ void LinkedList::ageGroupAnalysisWithLinkedList() const {
     }
     cout << "\nAnalysis time: " << fixed << setprecision(4)
         << chrono::duration<double, milli>(endTime - startTime).count() << " ms\n";
+}
+
+// Printing Helpers
+
+static void printTableHeader() {
+    cout << "\n"
+        << left << setw(14) << "ResidentID"
+        << setw(6) << "Age"
+        << setw(12) << "Transport"
+        << right << setw(10) << "Dist(km)"
+        << setw(16) << "EmissionFactor"
+        << setw(8) << "Days"
+        << setw(25) << "TotalMonthlyEmissions\n"
+        << string(90, '-') << "\n";
+}
+
+void LinkedList::printMemoryUsageWithLinkedList() const {
+    size_t totalMemory = (sizeof(Node) + sizeof(Resident)) * linkedListCount;
+    cout << "Structure Memory Usage: " << linkedListCount << " nodes x "
+        << "(" << sizeof(Node) << " + " << sizeof(Resident) << ") bytes = "
+        << totalMemory << " bytes ("
+        << fixed << setprecision(2) << totalMemory / 1024.0 << " KB)\n";
+}
+
+static void printResidentRow(const Resident& resident) {
+    cout << left << setw(14) << resident.residentID
+        << setw(6) << resident.age
+        << setw(12) << resident.modeOfTransport
+        << right << setw(10) << fixed << setprecision(2) << resident.dailyDistance
+        << setw(16) << resident.carbonEmissionFactor
+        << setw(8) << resident.avgDaysPerMonth
+        << setw(25) << resident.totalMonthlyEmissions << "\n";
+}
+
+void LinkedList::printWithLinkedList() const {
+    printTableHeader();
+    for (Node* currentNode = head; currentNode; currentNode = currentNode->next)
+        printResidentRow(*currentNode->data);
+}
+
+void LinkedList::printDatasetSummaryWithLinkedList() const {
+    double modeEmissionTotals[20] = {};
+    int    modeResidentCounts[20] = {};
+    double grandTotalEmissions = 0;
+
+    for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
+        grandTotalEmissions += currentNode->data->totalMonthlyEmissions;
+        for (int i = 0; i < TRANSPORT_COUNT; i++) {
+            if (currentNode->data->modeOfTransport == TRANSPORT_MODES[i]) {
+                modeEmissionTotals[i] += currentNode->data->totalMonthlyEmissions;
+                modeResidentCounts[i]++;
+                break;
+            }
+        }
+    }
+
+    string label = cityLabel.empty() ? "All Datasets" : cityLabel;
+    cout << "\n===== Carbon Emission Summary [" << label << "] =====\n"
+        << string(60, '-') << "\n"
+        << left << setw(18) << "Mode of Transport"
+        << right << setw(8) << "Count"
+        << setw(20) << "Total CO2 (kg)"
+        << setw(18) << "Avg CO2/User\n"
+        << string(60, '-') << "\n";
+
+    for (int i = 0; i < TRANSPORT_COUNT; i++) {
+        if (modeResidentCounts[i] == 0) continue;
+        cout << left << setw(18) << TRANSPORT_MODES[i]
+            << right << setw(8) << modeResidentCounts[i]
+            << fixed << setprecision(2)
+            << setw(20) << modeEmissionTotals[i]
+            << setw(18) << modeEmissionTotals[i] / modeResidentCounts[i] << "\n";
+    }
+
+    cout << string(60, '-') << "\n"
+        << "Total Residents  : " << linkedListCount << "\n"
+        << "Total CO2 (month): " << fixed << setprecision(2) << grandTotalEmissions << " kg\n"
+        << "Avg CO2/Resident : " << (linkedListCount > 0 ? grandTotalEmissions / linkedListCount : 0.0) << " kg\n"
+        << string(60, '-') << "\n";
+}
+
+static void printSearchHeader(const string& searchTitle) {
+    cout << "\nSearch Results - " << searchTitle << "\n"
+        << string(90, '-') << "\n"
+        << left << setw(14) << "ResidentID"
+        << setw(6) << "Age"
+        << setw(12) << "Transport"
+        << right << setw(10) << "Dist(km)"
+        << setw(16) << "EmissionFactor"
+        << setw(8) << "Days"
+        << setw(25) << "TotalMonthlyEmissions\n"
+        << string(90, '-') << "\n";
+}
+
+static void printSearchFooter(int matchCount, double elapsedMs, size_t stackMem) {
+    cout << string(90, '-') << "\n"
+        << "Total matches: " << matchCount << "\n"
+        << "Search time  : " << fixed << setprecision(4) << elapsedMs << " ms\n"
+        << "Search Memory: " << stackMem << " bytes (stack/local pointers)\n";
 }
 
 void LinkedList::printInsightsWithLinkedList() const {
@@ -463,13 +380,13 @@ void LinkedList::printInsightsWithLinkedList() const {
 
     for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
         int residentAge = currentNode->data->age;
-        for (int groupIndex = 0; groupIndex < GROUP_COUNT; ++groupIndex) {
+        for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
             if (residentAge < groupMinAge[groupIndex] || residentAge > groupMaxAge[groupIndex]) continue;
             groupStats[groupIndex].totalEmissions += currentNode->data->totalMonthlyEmissions;
-            ++groupStats[groupIndex].residentCount;
-            for (int i = 0; i < uniqueTransportCount; ++i) {
-                if (currentNode->data->modeOfTransport == uniqueTransports[i]) {
-                    ++groupStats[groupIndex].modeCount[i];
+            groupStats[groupIndex].residentCount++;
+            for (int i = 0; i < TRANSPORT_COUNT; i++) {
+                if (currentNode->data->modeOfTransport == TRANSPORT_MODES[i]) {
+                    groupStats[groupIndex].modeCount[i]++;
                     break;
                 }
             }
@@ -478,29 +395,29 @@ void LinkedList::printInsightsWithLinkedList() const {
     }
 
     int carIndex = -1, bicycleIndex = -1;
-    for (int i = 0; i < uniqueTransportCount; ++i) {
-        if (uniqueTransports[i] == "Car")     carIndex = i;
-        if (uniqueTransports[i] == "Bicycle") bicycleIndex = i;
+    for (int i = 0; i < TRANSPORT_COUNT; i++) {
+        if (TRANSPORT_MODES[i] == "Car")     carIndex = i;
+        if (TRANSPORT_MODES[i] == "Bicycle") bicycleIndex = i;
     }
 
     int highestEmittingGroup = 0;
-    for (int groupIndex = 1; groupIndex < GROUP_COUNT; ++groupIndex)
+    for (int groupIndex = 1; groupIndex < GROUP_COUNT; groupIndex++)
         if (groupStats[groupIndex].totalEmissions > groupStats[highestEmittingGroup].totalEmissions)
             highestEmittingGroup = groupIndex;
 
-    cout << "\n========== INSIGHTS & RECOMMENDATIONS ==========\n"
-        << string(72, '-') << "\n"
-        << left << setw(40) << "Age Group"
+    cout << "\n INSIGHTS & RECOMMENDATIONS \n"
+        << string(90, '-') << "\n"
+        << left << setw(46) << "Age Group"
         << right << setw(10) << "Residents"
         << setw(18) << "Total CO2 (kg)"
         << setw(18) << "Avg CO2\n"
-        << string(72, '-') << "\n";
+        << string(90, '-') << "\n";
 
-    for (int groupIndex = 0; groupIndex < GROUP_COUNT; ++groupIndex) {
+    for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
         double averageEmission = groupStats[groupIndex].residentCount > 0
             ? groupStats[groupIndex].totalEmissions / groupStats[groupIndex].residentCount
             : 0.0;
-        cout << left << setw(40) << groupNames[groupIndex]
+        cout << left << setw(46) << groupNames[groupIndex]
             << right << setw(10) << groupStats[groupIndex].residentCount
             << fixed << setprecision(2)
             << setw(18) << groupStats[groupIndex].totalEmissions
@@ -509,17 +426,19 @@ void LinkedList::printInsightsWithLinkedList() const {
         cout << "\n";
     }
 
-    cout << string(72, '-') << "\n";
+    cout << string(90, '-') << "\n";
     cout << "\nKey Findings:\n";
     cout << "  1. Highest emitting group : " << groupNames[highestEmittingGroup]
         << " (" << fixed << setprecision(2)
         << groupStats[highestEmittingGroup].totalEmissions << " kg CO2)\n";
 
     cout << "  2. Car vs Bicycle usage by age group:\n";
-    cout << "     " << left << setw(42) << "Age Group" << setw(8) << "Car" << setw(10) << "Bicycle\n";
-    for (int groupIndex = 0; groupIndex < GROUP_COUNT; ++groupIndex)
-        cout << "     " << left << setw(42) << groupNames[groupIndex]
-        << setw(8) << (carIndex != -1 ? groupStats[groupIndex].modeCount[carIndex] : 0)
+    cout << "     " << left << setw(44) << "Age Group"
+        << right << setw(8) << "Car"
+        << setw(10) << "Bicycle\n";
+    for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++)
+        cout << "     " << left << setw(44) << groupNames[groupIndex]
+        << right << setw(8) << (carIndex != -1 ? groupStats[groupIndex].modeCount[carIndex] : 0)
         << setw(10) << (bicycleIndex != -1 ? groupStats[groupIndex].modeCount[bicycleIndex] : 0)
         << "\n";
 
@@ -532,7 +451,8 @@ void LinkedList::printInsightsWithLinkedList() const {
         << string(72, '-') << "\n";
 }
 
-// Binary Search on Linked List - Code360
+// Searching Algorithms for Linked List
+// Binary Search - Code360
 Node* LinkedList::getMiddle(Node* start, Node* last) const {
     if (start == NULL) return NULL;
     Node* slow = start;
@@ -544,7 +464,7 @@ Node* LinkedList::getMiddle(Node* start, Node* last) const {
     return slow;
 }
 
-void LinkedList::searchByAgeBinaryWithLinkedList(int targetAge) const {
+void LinkedList::searchByAgeGroupBinaryWithLinkedList(int minAge, int maxAge) const {
     if (currentSortKey != BY_AGE) {
         cout << "WARNING: List is not sorted by Age. Binary search results will be incorrect.\n";
     }
@@ -552,90 +472,122 @@ void LinkedList::searchByAgeBinaryWithLinkedList(int targetAge) const {
     auto startTime = chrono::high_resolution_clock::now();
     size_t stackUsage = sizeof(Node*) * 5 + sizeof(int) * 2 + sizeof(chrono::steady_clock::time_point) * 2;
 
+    // Binary search for minAge boundary
     Node* start = head;
     Node* last = NULL;
-    Node* found = NULL;
+    Node* foundMin = NULL;
 
     while (start != last) {
         Node* mid = getMiddle(start, last);
         if (mid == NULL) break;
-        if (mid->data->age == targetAge) { found = mid; break; }
-        else if (mid->data->age < targetAge)    start = mid->next;
-        else                                    last = mid;
-    }
-
-    Node* leftMatch = found;
-    Node* rightMatch = found;
-    int   matchCount = 0;
-
-    if (found != NULL) {
-        while (rightMatch->next != NULL && rightMatch->next->data->age == targetAge)
-            rightMatch = rightMatch->next;
-        while (leftMatch != head) {
-            Node* prev = head;
-            while (prev->next != leftMatch) prev = prev->next;
-            if (prev->data->age == targetAge) leftMatch = prev;
-            else break;
+        if (mid->data->age >= minAge) {
+            foundMin = mid;
+            last = mid;
         }
-        for (Node* currentNode = leftMatch; currentNode != rightMatch->next; currentNode = currentNode->next)
-            matchCount++;
+        else {
+            start = mid->next;
+        }
     }
 
     auto endTime = chrono::high_resolution_clock::now();
 
-    if (found != NULL) {
-        cout << matchCount << " match(es) found (Age Binary Search).\n";
-        printTableHeader();
-        for (Node* currentNode = leftMatch; currentNode != rightMatch->next; currentNode = currentNode->next)
+    int matchCount = 0;
+    string searchTitle = "Age " + to_string(minAge) + " to " + to_string(maxAge);
+    printSearchHeader(searchTitle);
+
+    // From foundMin, print all nodes within range
+    for (Node* currentNode = foundMin; currentNode; currentNode = currentNode->next) {
+        if (currentNode->data->age > maxAge) break;
+        if (currentNode->data->age >= minAge) {
             printResidentRow(*currentNode->data);
-    }
-    else {
-        cout << "No resident found with age " << targetAge << ".\n";
+            matchCount++;
+        }
     }
 
-    printSearchFooter(matchCount, chrono::duration<double, milli>(endTime - startTime).count(), stackUsage);
+    double duration = chrono::duration<double, milli>(endTime - startTime).count();
+    printSearchFooter(matchCount, duration, stackUsage);
 }
 
-//
-
-void LinkedList::searchByDistanceBinaryWithLinkedList(double targetDistance) const {
+void LinkedList::searchByDistanceBinaryWithLinkedList(double distanceThreshold) const {
     if (currentSortKey != BY_DAILY_DISTANCE) {
         cout << "WARNING: List is not sorted by Daily Distance. Binary search results will be incorrect.\n";
     }
 
     auto startTime = chrono::high_resolution_clock::now();
-    size_t stackUsage = sizeof(Node*) * 3 + sizeof(double) + sizeof(int) + sizeof(chrono::steady_clock::time_point) * 2;
+    size_t stackUsage = sizeof(Node*) * 5 + sizeof(double) + sizeof(int) + sizeof(chrono::steady_clock::time_point) * 2;
 
+    // Binary search for first node > distanceThreshold
     Node* start = head;
     Node* last = NULL;
-    Node* found = NULL;
+    Node* foundBoundary = NULL;
 
     while (start != last) {
         Node* mid = getMiddle(start, last);
         if (mid == NULL) break;
-        if (getAbsolute(mid->data->dailyDistance - targetDistance) < 0.001) { found = mid; break; }
-        else if (mid->data->dailyDistance < targetDistance)         start = mid->next;
-        else                                                        last = mid;
+        if (mid->data->dailyDistance > distanceThreshold) {
+            foundBoundary = mid;
+            last = mid;
+        }
+        else {
+            start = mid->next;
+        }
     }
 
     auto endTime = chrono::high_resolution_clock::now();
 
-    if (found != NULL) {
-        cout << "Match found (Distance Binary Search):\n";
-        printTableHeader();
-        printResidentRow(*found->data);
-    }
-    else {
-        cout << "No resident found with daily distance " << targetDistance << ".\n";
+    int matchCount = 0;
+    string searchTitle = "Daily Distance > " + to_string(distanceThreshold) + " km";
+    printSearchHeader(searchTitle);
+
+    // Walk forward from boundary printing all nodes > threshold
+    for (Node* currentNode = foundBoundary; currentNode; currentNode = currentNode->next) {
+        if (currentNode->data->dailyDistance > distanceThreshold) {
+            printResidentRow(*currentNode->data);
+            matchCount++;
+        }
     }
 
-    printSearchFooter(found ? 1 : 0, chrono::duration<double, milli>(endTime - startTime).count(), stackUsage);
+    double duration = chrono::duration<double, milli>(endTime - startTime).count();
+    printSearchFooter(matchCount, duration, stackUsage);
 }
 
+// Linear Search
+
+void LinkedList::searchByTransportLinearWithLinkedList(const string& transportMode) const {
+    int matchCount = 0;
+    size_t stackUsage = sizeof(Node*) + sizeof(int) + sizeof(chrono::steady_clock::time_point) * 2;
+
+    auto startTime = chrono::high_resolution_clock::now();
+    for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
+        if (currentNode->data->modeOfTransport == transportMode) {
+            matchCount++;
+        }
+    }
+    auto endTime = chrono::high_resolution_clock::now();
+
+    cout << "LINEAR SEARCH: Transport = '" << transportMode << "'\n";
+    printSearchHeader("Transport: " + transportMode);
+
+    for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
+        if (currentNode->data->modeOfTransport == transportMode) {
+            printResidentRow(*currentNode->data);
+        }
+    }
+
+    double duration = chrono::duration<double, milli>(endTime - startTime).count();
+    printSearchFooter(matchCount, chrono::duration<double, milli>(endTime - startTime).count(), stackUsage);
+}
+
+// Compare one set with others
 void LinkedList::compareWithOtherCity(const LinkedList& other) const {
-    cout << "\n===== CROSS-DATASET COMPARISON =====\n"
-        << left << setw(20) << "Metric" << setw(25) << (cityLabel.empty() ? "Source A" : cityLabel)
-        << setw(25) << (other.cityLabel.empty() ? "Source B" : other.cityLabel) << "\n"
+    string col1 = cityLabel.empty() ? "Source A" : cityLabel;
+    string col2 = other.cityLabel.empty() ? "Source B" : other.cityLabel;
+
+    cout << "\nCROSS-DATASET COMPARISON\n"
+        << string(70, '-') << "\n"
+        << left << setw(20) << "Metric"
+        << setw(25) << col1
+        << setw(25) << col2 << "\n"
         << string(70, '-') << "\n";
 
     auto calculateStats = [](const LinkedList& list, double& total, double& avg) {

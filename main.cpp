@@ -20,9 +20,11 @@ void displayMenu(bool useLinkedList) {
 	cout << "1. View Carbon Emission Analysis" << endl;
 	cout << "2. Sort City Data" << endl;
 	cout << "3. Search City Data" << endl;
-	cout << "4. Return to Main Menu" << endl;
+	if (useLinkedList)
+		cout << "4. Analysis & Insights" << endl;
+	cout << (useLinkedList ? "5" : "4") << ". Return to Main Menu" << endl;
 	cout << "==========================================================" << endl;
-	cout << "Enter your choice (1-4): ";
+	cout << "Enter your choice (1-" << (useLinkedList ? "5" : "4") << "): ";
 }
 
 int selectCityMenu(bool allowAllOption = false) {
@@ -120,6 +122,7 @@ int main() {
 		cout << "Loading complete.\n" << endl;
 
 		bool sortedByAge[3] = { false, false, false };
+		bool sortedByDistance[3] = { false, false, false }; // Added for Binary Search tracking
 
 		int mainChoice = 0;
 		do {
@@ -140,41 +143,36 @@ int main() {
 				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
 
 				int ageChoice = 0;
-				cout << "\n --- Select Age Group ---" << endl;
-				cout << "1. 6  - 17" << endl;
-				cout << "2. 18 - 25" << endl;
-				cout << "3. 26 - 45" << endl;
-				cout << "4. 46 - 60" << endl;
-				cout << "5. 61 - 100" << endl;
-				cout << "6. All Age Groups" << endl;
-				if (useLinkedList) {
-					cout << "7. Dataset Summary" << endl;
-					cout << "8. Insights & Recommendations" << endl;
-				}
+				cout << "\n --- Select Analysis Type ---" << endl;
+				cout << "1. Age 6  - 17" << endl;
+				cout << "2. Age 18 - 25" << endl;
+				cout << "3. Age 26 - 45" << endl;
+				cout << "4. Age 46 - 60" << endl;
+				cout << "5. Age 61 - 100" << endl;
 				cout << "Choice: ";
 				cin >> ageChoice;
 
-				const string ageNames[] = {
-					"6 - 17", "18 - 25", "26 - 45",
-					"46 - 60", "61 - 100", "All Age Groups",
-					"Dataset Summary", "Insights & Recommendations"
-				};
-				if (ageChoice >= 1 && ageChoice <= 8)
-					cout << "  >> Selected: " << ageNames[ageChoice - 1] << endl;
-
 				if (useLinkedList) {
-					auto runLL = [&](LinkedList& ll) {
-						if (ageChoice >= 1 && ageChoice <= 5)
-							ll.searchByAgeGroupWithLinkedList(AGE_MIN[ageChoice - 1], AGE_MAX[ageChoice - 1]);
-						else if (ageChoice == 6)
-							ll.ageGroupAnalysisWithLinkedList();
-						else if (ageChoice == 7)
-							ll.printDatasetSummaryWithLinkedList();
-						else if (ageChoice == 8)
-							ll.printInsightsWithLinkedList();
-						};
-					if (cityChoice == 4) { runLL(llA); runLL(llB); runLL(llC); }
-					else                   runLL(*getCityLL(cityChoice, llA, llB, llC));
+					if (ageChoice == 9) {
+						LinkedList* currentLL = getCityLL(cityChoice, llA, llB, llC);
+						cout << "\nSelect the city to compare " << cityNames[cityChoice - 1] << " against:";
+						int otherChoice = selectCityMenu(false);
+						LinkedList* otherLL = getCityLL(otherChoice, llA, llB, llC);
+						currentLL->compareWithOtherCity(*otherLL);
+					}
+					else {
+						auto runLL = [&](LinkedList& ll) {
+							if (ageChoice >= 1 && ageChoice <= 5)
+								ll.searchByAgeGroupBinaryWithLinkedList(AGE_MIN[ageChoice - 1], AGE_MAX[ageChoice - 1]);
+							else if (ageChoice == 6)
+								ll.ageGroupAnalysisWithLinkedList();
+							else if (ageChoice == 7)
+								ll.printDatasetSummaryWithLinkedList();
+							else if (ageChoice == 8)
+								ll.printInsightsWithLinkedList();
+							};
+						runLL(*getCityLL(cityChoice, llA, llB, llC));
+					}
 				}
 				else {
 					int targetIdx = (ageChoice >= 1 && ageChoice <= 5) ? ageChoice - 1 : -1;
@@ -215,9 +213,13 @@ int main() {
 						<< " by " << keyNames[key] << " (Ascending)" << endl;
 
 					llPtr->sortWithLinkedList(key);
-					sortedByAge[cityChoice - 1] = (key == BY_AGE);
-					llPtr->printTop5WithLinkedList();
 
+					// Update search flags based on sort key
+					sortedByAge[cityChoice - 1] = (key == BY_AGE);
+					sortedByDistance[cityChoice - 1] = (key == BY_DAILY_DISTANCE);
+
+					llPtr->printWithLinkedList();
+					llPtr->printMemoryUsageWithLinkedList();
 				}
 				else {
 					Dataset* cityPtr = getCityArray(cityChoice, arrA, arrB, arrC);
@@ -285,8 +287,6 @@ int main() {
 				const string cityNames[] = { "City A", "City B", "City C" };
 				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
 
-				// FIX 1: 'searchChoice' was re-declared inside the if(useLinkedList) block,
-				// shadowing the outer one. The outer declaration is now used for both branches.
 				int searchChoice = 0;
 				cout << "\n --- Select Search Algorithm ---" << endl;
 				if (useLinkedList) {
@@ -302,8 +302,6 @@ int main() {
 				cin >> searchChoice;
 
 				if (useLinkedList) {
-					// FIX 2: The else (array) branch was nested inside the if(useLinkedList)
-					// block, making it unreachable. Moved outside below.
 					LinkedList* llPtr = getCityLL(cityChoice, llA, llB, llC);
 
 					if (searchChoice == 1) {
@@ -313,8 +311,7 @@ int main() {
 						getline(cin, mode);
 						cout << "  >> Linear Search | " << cityNames[cityChoice - 1]
 							<< " | Transport: " << mode << endl;
-						llPtr->searchByTransportWithLinkedList(mode);
-
+						llPtr->searchByTransportLinearWithLinkedList(mode);
 					}
 					else if (searchChoice == 2) {
 						if (!sortedByAge[cityChoice - 1]) {
@@ -322,26 +319,34 @@ int main() {
 							cout << "Auto-sorting using Linked List Quick Sort..." << endl;
 							llPtr->sortWithLinkedList(BY_AGE);
 							sortedByAge[cityChoice - 1] = true;
+							sortedByDistance[cityChoice - 1] = false;
 						}
-						int targetAge;
-						cout << "Enter exact Age to search for: ";
-						cin >> targetAge;
+						int minAge, maxAge;
+						cout << "Enter minimum Age: ";
+						cin >> minAge;
+						cout << "Enter maximum Age: ";
+						cin >> maxAge;
 						cout << "  >> Binary Search | " << cityNames[cityChoice - 1]
-							<< " | Age: " << targetAge << endl;
-						llPtr->searchByAgeBinaryWithLinkedList(targetAge);
-
+							<< " | Age: " << minAge << " to " << maxAge << endl;
+						llPtr->searchByAgeGroupBinaryWithLinkedList(minAge, maxAge);
 					}
 					else if (searchChoice == 3) {
+						if (!sortedByDistance[cityChoice - 1]) {
+							cout << "Warning: Binary Search requires data sorted by daily distance." << endl;
+							cout << "Auto-sorting using Linked List Quick Sort..." << endl;
+							llPtr->sortWithLinkedList(BY_DAILY_DISTANCE);
+							sortedByDistance[cityChoice - 1] = true;
+							sortedByAge[cityChoice - 1] = false;
+						}
 						double threshold;
 						cout << "Enter Daily Distance threshold in km (e.g. 15): ";
 						cin >> threshold;
-						cout << "  >> Linear Search | " << cityNames[cityChoice - 1]
+						cout << "  >> Binary Search | " << cityNames[cityChoice - 1]
 							<< " | Distance > " << threshold << " km" << endl;
-						llPtr->searchByDistanceWithLinkedList(threshold);
+						llPtr->searchByDistanceBinaryWithLinkedList(threshold);
 					}
 				}
 				else {
-					// Array search branch — was previously trapped inside useLinkedList block
 					Dataset* cityPtr = getCityArray(cityChoice, arrA, arrB, arrC);
 
 					if (searchChoice == 1) {
@@ -372,16 +377,48 @@ int main() {
 				break;
 			}
 
-			case 4:
-				cout << "\nReturning to Main Menu..." << endl;
+			case 4: {
+				if (!useLinkedList) { cout << "\nReturning to Main Menu..." << endl; break; }
+
+				int cityChoice = selectCityMenu(false);
+				const string cityNames[] = { "City A", "City B", "City C" };
+				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
+
+				cout << "\n --- Select Analysis Type ---" << endl;
+				cout << "1. Comprehensive Age Analysis" << endl;
+				cout << "2. Dataset Summary" << endl;
+				cout << "3. Insights & Recommendations" << endl;
+				cout << "4. Cross-City Comparison" << endl;
+				cout << "Choice: ";
+				int analysisChoice;
+				cin >> analysisChoice;
+
+				LinkedList* llPtr = getCityLL(cityChoice, llA, llB, llC);
+
+				if (analysisChoice == 1)
+					llPtr->ageGroupAnalysisWithLinkedList();
+				else if (analysisChoice == 2)
+					llPtr->printDatasetSummaryWithLinkedList();
+				else if (analysisChoice == 3)
+					llPtr->printInsightsWithLinkedList();
+				else if (analysisChoice == 4) {
+					cout << "\nSelect the city to compare " << cityNames[cityChoice - 1] << " against:";
+					int otherChoice = selectCityMenu(false);
+					LinkedList* otherLL = getCityLL(otherChoice, llA, llB, llC);
+					llPtr->compareWithOtherCity(*otherLL);
+				}
 				break;
+			}
+
+			case 5:
+				if (useLinkedList) { cout << "\nReturning to Main Menu..." << endl; break; }
 
 			default:
 				cout << "\nInvalid choice. Please select an option from the menu." << endl;
 				break;
 			}
 
-		} while (mainChoice != 4);
+		} while (mainChoice != (useLinkedList ? 5 : 4));
 
 		if (!useLinkedList) {
 			delete[] arrA.data;
