@@ -3,17 +3,16 @@
 
 #include <string>
 #include <fstream>
-#include "resident.hpp"
+#include "Resident.hpp"
 
 struct Node {
-    Resident data;
+    Resident* data;
     Node* next;
-    explicit Node(const Resident& r) : data(r), next(nullptr) {}
+    Node(const Resident& resident) : data(new Resident(resident)), next(nullptr) {}
+    ~Node() { delete data; }
 };
 
 enum SortKey { BY_AGE, BY_DAILY_DISTANCE, BY_CARBON_EMISSION };
-
-std::string getAgeGroup(int age);
 
 class LinkedList {
 public:
@@ -23,41 +22,42 @@ public:
     LinkedList(const LinkedList&) = delete;
     LinkedList& operator=(const LinkedList&) = delete;
 
-    void  append(const Resident& r);
-    void  clear();
-    void  sort(SortKey key = BY_AGE);
-    void  print()               const;
-    void  printTop5()           const;
-    void  printDatasetSummary() const;
-    void  printInsights()       const;
-    int   getLength()           const;
-    size_t getMemoryUsage()     const;
-    Node* getHead()             const { return head; }
+    void appendWithLinkedList(const Resident& resident);
+    void sortWithLinkedList(SortKey sortKey = BY_AGE);
+    void printWithLinkedList() const;
+    void printDatasetSummaryWithLinkedList() const;
+    void printInsightsWithLinkedList() const;
+    Node* getHeadWithLinkedList() const { return head; }
+    bool loadFromCSVWithLinkedList(const std::string& filename, const std::string& label = "");
 
-    bool  loadFromCSV(const std::string& filename, const std::string& cityLabel = "");
+    // linear
+    void searchByTransportLinearWithLinkedList(const std::string& transportMode) const;
 
-    void  searchByAgeGroup(int minAge, int maxAge)         const;
-    void  searchByTransport(const std::string& mode)       const;
-    void  searchByDistance(double threshold)               const;
-    void  searchByAgeBinary(int targetAge)                 const;
-    void  ageGroupAnalysis()                               const;
+    // Binary
+    void searchByAgeGroupBinaryWithLinkedList(int minAge, int maxAge) const;
+    void searchByDistanceBinaryWithLinkedList(double distanceThreshold) const;
+
+
+    void ageGroupAnalysisWithLinkedList() const;
+    int  getlinkedListCountWithLinkedList() const;
+    void printMemoryUsageWithLinkedList() const;
+    void compareWithOtherCity(const LinkedList& other) const;
 
 private:
     Node* head;
-    Node* tail;
-    int   length;
+    int   linkedListCount;
     std::string cityLabel;
+    SortKey currentSortKey;
+    static const std::string TRANSPORT_MODES[6];
+    static const int TRANSPORT_COUNT = 6;
 
-    void  insertionSort(int* idx, const double* keys, int low, int high);
-    void  medianOfThree(int* idx, const double* keys, int low, int high);
-    void  threeWayPartition(int* idx, const double* keys,
-        int low, int high, int& lt, int& gt);
-    void  quickSortHelper(int* idx, const double* keys, int low, int high);
-
-    static double getSortKey(const Resident& r, SortKey key);
-    static void   parseLine(const std::string& line, Resident& r);
-
-	void searchByAgeBinary(int targetAge) const;
+    void swapNodeData(Node* a, Node* b);
+    void medianOfThreeWithLinkedList(Node* start, Node* mid, Node* end);
+    void threeWayPartitionWithLinkedList(Node* start, Node* end,
+        Node*& lessThanBoundary, Node*& greaterThanBoundary);
+    void quickSortHelperWithLinkedList(Node* start, Node* end);
+    static double getSortKeyWithLinkedList(const Resident& resident, SortKey sortKey);
+    Node* getMiddle(Node* start, Node* last) const;
 };
 
 #endif
