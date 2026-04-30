@@ -357,7 +357,7 @@ static void printSearchFooter(int matchCount, double elapsedMs, size_t stackMem)
     cout << string(90, '-') << "\n"
         << "Total matches: " << matchCount << "\n"
         << "Search time  : " << fixed << setprecision(4) << elapsedMs << " ms\n"
-        << "Search Memory: " << stackMem << " bytes (stack/local pointers)\n";
+        << "Search Memory: " << stackMem << " bytes (local variables, compile-time estimate)\n";
 }
 
 void LinkedList::printInsightsWithLinkedList() const {
@@ -470,7 +470,7 @@ void LinkedList::searchByAgeGroupBinaryWithLinkedList(int minAge, int maxAge) co
     }
 
     auto startTime = chrono::high_resolution_clock::now();
-    size_t stackUsage = sizeof(Node*) * 5 + sizeof(int) * 2 + sizeof(chrono::steady_clock::time_point) * 2;
+    size_t stackUsage = sizeof(Node*) * 2 + sizeof(int); 
 
     // Binary search for minAge boundary
     Node* start = head;
@@ -597,11 +597,15 @@ void LinkedList::compareWithOtherCity(const LinkedList& other) const {
         };
 
     double t1, a1, t2, a2;
+    auto startTime = chrono::high_resolution_clock::now();
     calculateStats(*this, t1, a1);
     calculateStats(other, t2, a2);
+    auto endTime = chrono::high_resolution_clock::now();
 
     cout << left << setw(20) << "Total Residents" << setw(25) << linkedListCount << setw(25) << other.linkedListCount << "\n"
         << left << setw(20) << "Total CO2 (kg)" << setw(25) << fixed << setprecision(2) << t1 << setw(25) << t2 << "\n"
         << left << setw(20) << "Avg CO2/Resident" << setw(25) << a1 << setw(25) << a2 << "\n"
-        << string(70, '-') << "\n";
+        << string(70, '-') << "\n"
+        << "Comparison time  : " << fixed << setprecision(4)
+        << chrono::duration<double, milli>(endTime - startTime).count() << " ms\n";
 }
