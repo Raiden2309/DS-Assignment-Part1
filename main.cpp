@@ -155,6 +155,10 @@ int main() {
 
 				if (useLinkedList) {
 					if (ageChoice == 9) {
+						if (cityChoice == 4) {
+							cout << "Cross-dataset comparison not available for All Cities.\n";
+							break;
+						}
 						LinkedList* currentLL = getCityLL(cityChoice, llA, llB, llC);
 						cout << "\nSelect the city to compare " << cityNames[cityChoice - 1] << " against:";
 						int otherChoice = selectCityMenu(false);
@@ -172,9 +176,16 @@ int main() {
 							else if (ageChoice == 8)
 								ll.printInsightsWithLinkedList();
 							};
-						// NOTE: If the mf selects All Cities (4) for Linked Lists here, it will crash. 
-						// the mf needs an if (cityChoice == 4) catch here for Linked Lists.
-						runLL(*getCityLL(cityChoice, llA, llB, llC));
+
+						// Handle "All Cities" by running each list individually
+						if (cityChoice == 4) {
+							runLL(llA);
+							runLL(llB);
+							runLL(llC);
+						}
+						else {
+							runLL(*getCityLL(cityChoice, llA, llB, llC));
+						}
 					}
 				}
 				else {
