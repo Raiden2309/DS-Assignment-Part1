@@ -20,11 +20,10 @@ void displayMenu(bool useLinkedList) {
 	cout << "1. View Carbon Emission Analysis" << endl;
 	cout << "2. Sort City Data" << endl;
 	cout << "3. Search City Data" << endl;
-	if (useLinkedList)
-		cout << "4. Analysis & Insights" << endl;
-	cout << (useLinkedList ? "5" : "4") << ". Return to Main Menu" << endl;
+	cout << "4. Analysis & Insights" << endl; // Now always visible
+	cout << "5. Return to Main Menu" << endl;
 	cout << "==========================================================" << endl;
-	cout << "Enter your choice (1-" << (useLinkedList ? "5" : "4") << "): ";
+	cout << "Enter your choice (1-5): ";
 }
 
 int selectCityMenu(bool allowAllOption = false) {
@@ -65,8 +64,8 @@ LinkedList* getCityLL(int choice, LinkedList& a, LinkedList& b, LinkedList& c) {
 static const int AGE_MIN[] = { 6, 18, 26, 46, 61 };
 static const int AGE_MAX[] = { 17, 25, 45, 60, 100 };
 
-int main() {
-
+int main() 
+{ 
 	bool running = true;
 
 	while (running) {
@@ -393,8 +392,6 @@ int main() {
 			}
 
 			case 4: {
-				if (!useLinkedList) { cout << "\nReturning to Main Menu..." << endl; break; }
-
 				int cityChoice = selectCityMenu(false);
 				const string cityNames[] = { "City A", "City B", "City C" };
 				cout << "  >> City Selected: " << cityNames[cityChoice - 1] << endl;
@@ -408,38 +405,48 @@ int main() {
 				int analysisChoice;
 				cin >> analysisChoice;
 
-				LinkedList* llPtr = getCityLL(cityChoice, llA, llB, llC);
+				if (useLinkedList) {
+					LinkedList* llPtr = getCityLL(cityChoice, llA, llB, llC);
 
-				if (analysisChoice == 1)
-					llPtr->ageGroupAnalysisWithLinkedList();
-				else if (analysisChoice == 2)
-					llPtr->printDatasetSummaryWithLinkedList();
-				else if (analysisChoice == 3)
-					llPtr->printInsightsWithLinkedList();
-				else if (analysisChoice == 4) {
-					cout << "\nSelect the city to compare " << cityNames[cityChoice - 1] << " against:";
-					int otherChoice = selectCityMenu(false);
-					LinkedList* otherLL = getCityLL(otherChoice, llA, llB, llC);
-					llPtr->compareWithOtherCity(*otherLL);
+					if (analysisChoice == 1) llPtr->ageGroupAnalysisWithLinkedList();
+					else if (analysisChoice == 2) llPtr->printDatasetSummaryWithLinkedList();
+					else if (analysisChoice == 3) llPtr->printInsightsWithLinkedList();
+					else if (analysisChoice == 4) {
+						cout << "\nSelect the city to compare " << cityNames[cityChoice - 1] << " against:";
+						int otherChoice = selectCityMenu(false);
+						LinkedList* otherLL = getCityLL(otherChoice, llA, llB, llC);
+						llPtr->compareWithOtherCity(*otherLL);
+					}
+				}
+				else {
+					// NEW: Array Routing Logic!
+					Dataset* arrPtr = getCityArray(cityChoice, arrA, arrB, arrC);
+
+					if (analysisChoice == 1) analyzeAndPrintEmissions(*arrPtr, -1);
+					else if (analysisChoice == 2) printDatasetSummary(*arrPtr);
+					else if (analysisChoice == 3) printInsights(*arrPtr);
+					else if (analysisChoice == 4) {
+						cout << "\nSelect the city to compare " << cityNames[cityChoice - 1] << " against:";
+						int otherChoice = selectCityMenu(false);
+						Dataset* otherArr = getCityArray(otherChoice, arrA, arrB, arrC);
+						compareWithOtherCity(*arrPtr, *otherArr);
+					}
 				}
 				break;
 			}
 
 			case 5:
-				if (useLinkedList) { cout << "\nReturning to Main Menu..." << endl; break; }
-
-			default:
-				cout << "\nInvalid choice. Please select an option from the menu." << endl;
+				cout << "\nReturning to Main Menu..." << endl;
 				break;
 			}
 
-		} while (mainChoice != (useLinkedList ? 5 : 4));
+			} while (mainChoice != 5);
 
-		if (!useLinkedList) {
-			delete[] arrA.data;
-			delete[] arrB.data;
-			delete[] arrC.data;
+			if (!useLinkedList) {
+				delete[] arrA.data;
+				delete[] arrB.data;
+				delete[] arrC.data;
+			}
 		}
-	}
 	return 0;
 }

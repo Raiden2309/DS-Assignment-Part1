@@ -18,4 +18,11 @@ void printTop5(Dataset& city);
 void searchByTransportMode(Dataset& city, std::string mode); // Linear Search (Unsorted Data)
 void searchByAgeBinary(Dataset& city, int targetAge);        // Binary Search (Sorted Data)
 
+// Advanced Analysis & Insights for Arrays
+void ageGroupAnalysis(const Dataset& city);
+void printDatasetSummary(const Dataset& city);
+void printInsights(const Dataset& city);
+void compareWithOtherCity(const Dataset& city1, const Dataset& city2);
+void printMemoryUsage(const Dataset& city);
+
 #endif

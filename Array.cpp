@@ -344,3 +344,245 @@ void searchByAgeBinary(Dataset& city, int targetAge) {
 
 	cout << "Binary Search Execution Time: " << fixed << setprecision(4) << duration.count() << " ms.\n" << endl;
 }
+
+// ADVANCED ANALYSIS & INSIGHTS (ARRAY IMPLEMENTATION)
+void printMemoryUsage(const Dataset& city) {
+	// Arrays do not have Node pointer overhead!
+	size_t totalMemory = sizeof(Resident) * city.size;
+	cout << "Structure Memory Usage: " << city.size << " elements x "
+		<< sizeof(Resident) << " bytes = "
+		<< totalMemory << " bytes ("
+		<< fixed << setprecision(2) << totalMemory / 1024.0 << " KB)\n";
+}
+
+void ageGroupAnalysis(const Dataset& city) {
+	static const int GROUP_COUNT = 5;
+	static const char* groupNames[GROUP_COUNT] = {
+		"Children & Teenagers (6-17)",
+		"University Students / Young Adults (18-25)",
+		"Working Adults Early Career (26-45)",
+		"Working Adults Late Career (46-60)",
+		"Senior Citizens / Retirees (61-100)"
+	};
+	static const int groupMinAge[GROUP_COUNT] = { 6,  18, 26, 46,  61 };
+	static const int groupMaxAge[GROUP_COUNT] = { 17, 25, 45, 60, 100 };
+
+	struct GroupStats {
+		double totalEmissions = 0;
+		int    residentCount = 0;
+		int    modeCount[20] = {};
+		double modeEmissions[20] = {};
+	} groupStats[GROUP_COUNT];
+
+	auto startTime = chrono::high_resolution_clock::now();
+	for (int i = 0; i < city.size; i++) {
+		int residentAge = city.data[i].age;
+		for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
+			if (residentAge < groupMinAge[groupIndex] || residentAge > groupMaxAge[groupIndex]) continue;
+			groupStats[groupIndex].totalEmissions += city.data[i].totalMonthlyEmissions;
+			groupStats[groupIndex].residentCount++;
+			for (int m = 0; m < NUM_MODES; m++) {
+				if (city.data[i].modeOfTransport == TRANSPORT_MODES[m]) {
+					groupStats[groupIndex].modeCount[m]++;
+					groupStats[groupIndex].modeEmissions[m] += city.data[i].totalMonthlyEmissions;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	auto endTime = chrono::high_resolution_clock::now();
+
+	cout << "Age Group Analysis [" << city.cityName << "]\n";
+
+	for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
+		int dominantModeIndex = 0;
+		for (int m = 1; m < NUM_MODES; m++)
+			if (groupStats[groupIndex].modeCount[m] > groupStats[groupIndex].modeCount[dominantModeIndex])
+				dominantModeIndex = m;
+
+		cout << "\nAge Group : " << groupNames[groupIndex] << "\n"
+			<< string(72, '-') << "\n"
+			<< left << setw(18) << "Transport"
+			<< right << setw(7) << "Count"
+			<< setw(20) << "Total CO2 (kg)"
+			<< setw(20) << "Avg CO2/Resident\n"
+			<< string(72, '-') << "\n";
+
+		for (int m = 0; m < NUM_MODES; m++) {
+			if (groupStats[groupIndex].modeCount[m] == 0) continue;
+			cout << left << setw(18) << TRANSPORT_MODES[m]
+				<< right << setw(7) << groupStats[groupIndex].modeCount[m]
+				<< fixed << setprecision(2)
+				<< setw(20) << groupStats[groupIndex].modeEmissions[m]
+				<< setw(20) << groupStats[groupIndex].modeEmissions[m] / groupStats[groupIndex].modeCount[m] << "\n";
+		}
+
+		double averageEmission = groupStats[groupIndex].residentCount > 0
+			? groupStats[groupIndex].totalEmissions / groupStats[groupIndex].residentCount : 0.0;
+
+		cout << string(72, '-') << "\n"
+			<< "Most Preferred Transport : " << TRANSPORT_MODES[dominantModeIndex] << "\n"
+			<< "Total Emission           : " << fixed << setprecision(2) << groupStats[groupIndex].totalEmissions << " kg CO2\n"
+			<< "Average Emission         : " << averageEmission << " kg CO2/resident\n"
+			<< "Total Residents          : " << groupStats[groupIndex].residentCount << "\n";
+	}
+	cout << "\nAnalysis time: " << fixed << setprecision(4)
+		<< chrono::duration<double, milli>(endTime - startTime).count() << " ms\n";
+}
+
+void printDatasetSummary(const Dataset& city) {
+	double modeEmissionTotals[20] = {};
+	int    modeResidentCounts[20] = {};
+	double grandTotalEmissions = 0;
+
+	for (int i = 0; i < city.size; i++) {
+		grandTotalEmissions += city.data[i].totalMonthlyEmissions;
+		for (int m = 0; m < NUM_MODES; m++) {
+			if (city.data[i].modeOfTransport == TRANSPORT_MODES[m]) {
+				modeEmissionTotals[m] += city.data[i].totalMonthlyEmissions;
+				modeResidentCounts[m]++;
+				break;
+			}
+		}
+	}
+
+	cout << "\n===== Carbon Emission Summary [" << city.cityName << "] =====\n"
+		<< string(60, '-') << "\n"
+		<< left << setw(18) << "Mode of Transport"
+		<< right << setw(8) << "Count"
+		<< setw(20) << "Total CO2 (kg)"
+		<< setw(18) << "Avg CO2/User\n"
+		<< string(60, '-') << "\n";
+
+	for (int m = 0; m < NUM_MODES; m++) {
+		if (modeResidentCounts[m] == 0) continue;
+		cout << left << setw(18) << TRANSPORT_MODES[m]
+			<< right << setw(8) << modeResidentCounts[m]
+			<< fixed << setprecision(2)
+			<< setw(20) << modeEmissionTotals[m]
+			<< setw(18) << modeEmissionTotals[m] / modeResidentCounts[m] << "\n";
+	}
+
+	cout << string(60, '-') << "\n"
+		<< "Total Residents  : " << city.size << "\n"
+		<< "Total CO2 (month): " << fixed << setprecision(2) << grandTotalEmissions << " kg\n"
+		<< "Avg CO2/Resident : " << (city.size > 0 ? grandTotalEmissions / city.size : 0.0) << " kg\n"
+		<< string(60, '-') << "\n";
+}
+
+void printInsights(const Dataset& city) {
+	static const int GROUP_COUNT = 5;
+	static const char* groupNames[GROUP_COUNT] = {
+		"Children & Teenagers (6-17)",
+		"University Students / Young Adults (18-25)",
+		"Working Adults Early Career (26-45)",
+		"Working Adults Late Career (46-60)",
+		"Senior Citizens / Retirees (61-100)"
+	};
+	static const int groupMinAge[GROUP_COUNT] = { 6,  18, 26, 46,  61 };
+	static const int groupMaxAge[GROUP_COUNT] = { 17, 25, 45, 60, 100 };
+
+	struct GroupStats {
+		double totalEmissions = 0;
+		int    residentCount = 0;
+		int    modeCount[20] = {};
+	} groupStats[GROUP_COUNT];
+
+	for (int i = 0; i < city.size; i++) {
+		int residentAge = city.data[i].age;
+		for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
+			if (residentAge < groupMinAge[groupIndex] || residentAge > groupMaxAge[groupIndex]) continue;
+			groupStats[groupIndex].totalEmissions += city.data[i].totalMonthlyEmissions;
+			groupStats[groupIndex].residentCount++;
+			for (int m = 0; m < NUM_MODES; m++) {
+				if (city.data[i].modeOfTransport == TRANSPORT_MODES[m]) {
+					groupStats[groupIndex].modeCount[m]++;
+					break;
+				}
+			}
+			break;
+		}
+	}
+
+	int carIndex = -1, bicycleIndex = -1;
+	for (int i = 0; i < NUM_MODES; i++) {
+		if (TRANSPORT_MODES[i] == "Car")     carIndex = i;
+		if (TRANSPORT_MODES[i] == "Bicycle") bicycleIndex = i;
+	}
+
+	int highestEmittingGroup = 0;
+	for (int groupIndex = 1; groupIndex < GROUP_COUNT; groupIndex++)
+		if (groupStats[groupIndex].totalEmissions > groupStats[highestEmittingGroup].totalEmissions)
+			highestEmittingGroup = groupIndex;
+
+	cout << "\n INSIGHTS & RECOMMENDATIONS [" << city.cityName << "]\n"
+		<< string(90, '-') << "\n"
+		<< left << setw(46) << "Age Group"
+		<< right << setw(10) << "Residents"
+		<< setw(18) << "Total CO2 (kg)"
+		<< setw(18) << "Avg CO2\n"
+		<< string(90, '-') << "\n";
+
+	for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++) {
+		double averageEmission = groupStats[groupIndex].residentCount > 0
+			? groupStats[groupIndex].totalEmissions / groupStats[groupIndex].residentCount : 0.0;
+
+		cout << left << setw(46) << groupNames[groupIndex]
+			<< right << setw(10) << groupStats[groupIndex].residentCount
+			<< fixed << setprecision(2)
+			<< setw(18) << groupStats[groupIndex].totalEmissions
+			<< setw(18) << averageEmission;
+		if (groupIndex == highestEmittingGroup) cout << "  << HIGHEST";
+		cout << "\n";
+	}
+
+	cout << string(90, '-') << "\n";
+	cout << "\nKey Findings:\n";
+	cout << "  1. Highest emitting group : " << groupNames[highestEmittingGroup]
+		<< " (" << fixed << setprecision(2) << groupStats[highestEmittingGroup].totalEmissions << " kg CO2)\n";
+
+	cout << "  2. Car vs Bicycle usage by age group:\n";
+	cout << "     " << left << setw(44) << "Age Group" << right << setw(8) << "Car" << setw(10) << "Bicycle\n";
+
+	for (int groupIndex = 0; groupIndex < GROUP_COUNT; groupIndex++)
+		cout << "     " << left << setw(44) << groupNames[groupIndex]
+		<< right << setw(8) << (carIndex != -1 ? groupStats[groupIndex].modeCount[carIndex] : 0)
+		<< setw(10) << (bicycleIndex != -1 ? groupStats[groupIndex].modeCount[bicycleIndex] : 0) << "\n";
+
+	cout << "\nRecommendations:\n"
+		<< string(72, '-') << "\n"
+		<< "  - " << groupNames[highestEmittingGroup] << " has the highest emissions.\n"
+		<< "    Encourage carpooling or public transport for this group.\n"
+		<< "  - Groups with high car usage should be targeted with\n"
+		<< "    cycling infrastructure and incentives.\n"
+		<< string(72, '-') << "\n";
+}
+
+void compareWithOtherCity(const Dataset& city1, const Dataset& city2) {
+	cout << "\nCROSS-DATASET COMPARISON\n"
+		<< string(70, '-') << "\n"
+		<< left << setw(20) << "Metric"
+		<< setw(25) << city1.cityName
+		<< setw(25) << city2.cityName << "\n"
+		<< string(70, '-') << "\n";
+
+	auto calculateStats = [](const Dataset& list, double& total, double& avg) {
+		total = 0;
+		for (int i = 0; i < list.size; i++) total += list.data[i].totalMonthlyEmissions;
+		avg = list.size > 0 ? total / list.size : 0;
+		};
+
+	double t1, a1, t2, a2;
+	auto startTime = chrono::high_resolution_clock::now();
+	calculateStats(city1, t1, a1);
+	calculateStats(city2, t2, a2);
+	auto endTime = chrono::high_resolution_clock::now();
+
+	cout << left << setw(20) << "Total Residents" << setw(25) << city1.size << setw(25) << city2.size << "\n"
+		<< left << setw(20) << "Total CO2 (kg)" << setw(25) << fixed << setprecision(2) << t1 << setw(25) << t2 << "\n"
+		<< left << setw(20) << "Avg CO2/Resident" << setw(25) << a1 << setw(25) << a2 << "\n"
+		<< string(70, '-') << "\n"
+		<< "Comparison time  : " << fixed << setprecision(4)
+		<< chrono::duration<double, milli>(endTime - startTime).count() << " ms\n";
+}
