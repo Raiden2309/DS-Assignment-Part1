@@ -149,6 +149,7 @@ int main() {
 				cout << "3. Age 26 - 45" << endl;
 				cout << "4. Age 46 - 60" << endl;
 				cout << "5. Age 61 - 100" << endl;
+				cout << "6. All Age Groups" << endl;
 				cout << "Choice: ";
 				cin >> ageChoice;
 
@@ -171,10 +172,13 @@ int main() {
 							else if (ageChoice == 8)
 								ll.printInsightsWithLinkedList();
 							};
+						// NOTE: If the mf selects All Cities (4) for Linked Lists here, it will crash. 
+						// the mf needs an if (cityChoice == 4) catch here for Linked Lists.
 						runLL(*getCityLL(cityChoice, llA, llB, llC));
 					}
 				}
 				else {
+					//Array Logic
 					int targetIdx = (ageChoice >= 1 && ageChoice <= 5) ? ageChoice - 1 : -1;
 					if (cityChoice == 4) {
 						analyzeAndPrintEmissions(arrA, targetIdx);
