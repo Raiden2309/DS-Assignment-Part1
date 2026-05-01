@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <limits>
+#include <iomanip>	
 #include "Resident.hpp"
 #include "ArrayProcessor.hpp"
 #include "linked_list_quick_sort.hpp"
@@ -121,7 +122,7 @@ int main()
 		cout << "Loading complete.\n" << endl;
 
 		bool sortedByAge[3] = { false, false, false };
-		bool sortedByDistance[3] = { false, false, false }; // Added for Binary Search tracking
+		bool sortedByDistance[3] = { false, false, false }; // Binary Search tracking
 
 		int mainChoice = 0;
 		do {
@@ -250,9 +251,29 @@ int main()
 						cout << "Sort by: 1. Age (Young to Old) | 2. Emission (High to Low): ";
 						cin >> expressTarget;
 
-						bool useInsertion = (cityPtr->size < 50);
+						// Scan Dataset
+						int outOfOrderCount = 0;
+						for (int i = 1; i < cityPtr->size; i++) {
+							if (expressTarget == 1) {
+								// Checking Age (Ascending): Is the current age smaller than the previous one?
+								if (cityPtr->data[i].age < cityPtr->data[i - 1].age) outOfOrderCount++;
+							}
+							else {
+								// Checking Emission (Descending): Is current emission higher than previous?
+								if (cityPtr->data[i].totalMonthlyEmissions > cityPtr->data[i - 1].totalMonthlyEmissions) outOfOrderCount++;
+							}
+						}
+
+						// Calculate how messed up the data is (0.0 = perfectly sorted, 1.0 = total chaos)
+						double chaosLevel = (cityPtr->size > 1) ? (double)outOfOrderCount / cityPtr->size : 0.0;
+
+						// Use Insertion Sort if it's a tiny dataset OR if it's already mostly sorted (< 15% chaos)
+						bool useInsertion = (cityPtr->size < 50) || (chaosLevel < 0.15);
+
 						const string algoName = useInsertion ? "Insertion Sort" : "Quick Sort";
 						const string fieldName = (expressTarget == 1) ? "Age (Ascending)" : "Emission (Descending)";
+
+						cout << "  >> Dataset Scanner: Detected " << fixed << setprecision(1) << (chaosLevel * 100) << "% chaos." << endl;
 						cout << "  >> " << cityNames[cityChoice - 1]
 							<< " | Algorithm: " << algoName
 							<< " | Field: " << fieldName << endl;
