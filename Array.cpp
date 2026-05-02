@@ -276,34 +276,59 @@ void printTop5(Dataset& city) {
 
 // 1. Linear Search (Best for unsorted data)
 void searchByTransportMode(Dataset& city, string mode) {
-	cout << "\n--- LINEAR SEARCH: Finding residents who use '" << mode << "' in " << city.cityName << " ---" << endl;
-
-	auto start = chrono::high_resolution_clock::now();
-
 	int matchCount = 0;
+
+	// 1. START TIMER
+	auto startTime = chrono::high_resolution_clock::now();
+
+	// 2. SEARCH AND COUNT ONLY (No printing!)
 	for (int i = 0; i < city.size; i++) {
 		if (city.data[i].modeOfTransport == mode) {
-			if (matchCount < 5) { // Print only first 5 to avoid console spam
-				if (matchCount == 0) {
-					cout << left << setw(15) << "Resident ID" << setw(10) << "Age" << setw(20) << "Mode of Transport" << endl;
-					cout << string(45, '-') << endl;
-				}
-				cout << left << setw(15) << city.data[i].residentID
-					<< setw(10) << city.data[i].age
-					<< setw(20) << city.data[i].modeOfTransport << endl;
-			}
 			matchCount++;
 		}
 	}
 
-	auto end = chrono::high_resolution_clock::now();
-	chrono::duration<double, std::milli> duration = end - start;
+	// 3. STOP TIMER
+	auto endTime = chrono::high_resolution_clock::now();
 
-	if (matchCount > 5) cout << "... and " << (matchCount - 5) << " more matches hidden." << endl;
-	if (matchCount == 0) cout << "No residents found using " << mode << "." << endl;
+	// 4. NOW PRINT TO THE SCREEN
+	cout << "\n--- LINEAR SEARCH: Finding residents who use '" << mode << "' in " << city.cityName << " ---\n"
+		<< string(90, '-') << "\n"
+		<< left << setw(14) << "ResidentID"
+		<< setw(6) << "Age"
+		<< setw(12) << "Transport"
+		<< right << setw(10) << "Dist(km)"
+		<< setw(16) << "EmissionFactor"
+		<< setw(8) << "Days"
+		<< setw(25) << "TotalMonthlyEmissions\n"
+		<< string(90, '-') << "\n";
 
-	cout << "Total found: " << matchCount << endl;
-	cout << "Linear Search Execution Time: " << fixed << setprecision(4) << duration.count() << " ms.\n" << endl;
+	int printedCount = 0;
+	for (int i = 0; i < city.size; i++) {
+		if (city.data[i].modeOfTransport == mode) {
+			if (printedCount < 5) {
+				cout << left << setw(14) << city.data[i].residentID
+					<< setw(6) << city.data[i].age
+					<< setw(12) << city.data[i].modeOfTransport
+					<< right << setw(10) << fixed << setprecision(2) << city.data[i].dailyDistance
+					<< setw(16) << city.data[i].carbonEmissionFactor
+					<< setw(8) << city.data[i].avgDaysPerMonth
+					<< setw(25) << city.data[i].totalMonthlyEmissions << "\n";
+				printedCount++;
+			}
+		}
+	}
+
+	if (matchCount > 5) cout << "... and " << (matchCount - 5) << " more matches hidden.\n";
+	if (matchCount == 0) cout << "No residents found using " << mode << ".\n";
+
+	double elapsedMs = chrono::duration<double, milli>(endTime - startTime).count();
+	size_t stackMem = sizeof(int) * 3 + sizeof(chrono::steady_clock::time_point) * 2;
+
+	cout << string(90, '-') << "\n"
+		<< "Total matches: " << matchCount << "\n"
+		<< "Search time  : " << fixed << setprecision(4) << elapsedMs << " ms\n"
+		<< "Search Memory: " << stackMem << " bytes (local variables)\n";
 }
 
 // 2. Binary Search (Requires data to be sorted by Age first)
@@ -311,7 +336,10 @@ void searchByAgeBinary(Dataset& city, int targetAge) {
 	int left = 0;
 	int right = city.size - 1;
 	int foundIndex = -1;
+	int startIndex = -1;
+	int endIndex = -1;
 
+	// 1. START TIMER
 	auto startTime = chrono::high_resolution_clock::now();
 
 	// Step 1: Standard Binary Search to find ONE match
@@ -329,9 +357,25 @@ void searchByAgeBinary(Dataset& city, int targetAge) {
 		}
 	}
 
+	if (foundIndex != -1) {
+		// Step 2: Scan backwards (Left) to find where the ages actually start
+		startIndex = foundIndex;
+		while (startIndex > 0 && city.data[startIndex - 1].age == targetAge) {
+			startIndex--;
+		}
+
+		// Step 3: Scan forwards (Right) to find where the ages end
+		endIndex = foundIndex;
+		while (endIndex < city.size - 1 && city.data[endIndex + 1].age == targetAge) {
+			endIndex++;
+		}
+	}
+
+	// 2. STOP TIMER (Timer includes the scanning, but excludes the slow printing!)
 	auto endTime = chrono::high_resolution_clock::now();
 	int matchCount = 0;
 
+	// 3. NOW PRINT TO SCREEN
 	cout << "\nSearch Results - Exact Age: " << targetAge << " [" << city.cityName << "]\n"
 		<< string(90, '-') << "\n"
 		<< left << setw(14) << "ResidentID"
@@ -344,18 +388,6 @@ void searchByAgeBinary(Dataset& city, int targetAge) {
 		<< string(90, '-') << "\n";
 
 	if (foundIndex != -1) {
-		// Step 2: Scan backwards (Left) to find where the 26s actually start
-		int startIndex = foundIndex;
-		while (startIndex > 0 && city.data[startIndex - 1].age == targetAge) {
-			startIndex--;
-		}
-
-		// Step 3: Scan forwards (Right) to find where the 26s end
-		int endIndex = foundIndex;
-		while (endIndex < city.size - 1 && city.data[endIndex + 1].age == targetAge) {
-			endIndex++;
-		}
-
 		// Step 4: Print everyone in that contiguous block
 		for (int i = startIndex; i <= endIndex; i++) {
 			cout << left << setw(14) << city.data[i].residentID
@@ -375,14 +407,13 @@ void searchByAgeBinary(Dataset& city, int targetAge) {
 	double elapsedMs = chrono::duration<double, milli>(endTime - startTime).count();
 
 	// Arrays don't have heavy pointer overhead, so stack memory is very low!
-	size_t stackMem = sizeof(int) * 5 + sizeof(chrono::steady_clock::time_point) * 2;
+	size_t stackMem = sizeof(int) * 6 + sizeof(chrono::steady_clock::time_point) * 2;
 
 	cout << string(90, '-') << "\n"
 		<< "Total matches: " << matchCount << "\n"
 		<< "Search time  : " << fixed << setprecision(4) << elapsedMs << " ms\n"
 		<< "Search Memory: " << stackMem << " bytes (local variables)\n";
 }
-
 // ADVANCED ANALYSIS & INSIGHTS (ARRAY IMPLEMENTATION)
 void printMemoryUsage(const Dataset& city) {
 	// Arrays do not have Node pointer overhead!
