@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iomanip>
 #include <chrono>
+#include <cmath>	
 #include "Resident.hpp"
 #include "ArrayProcessor.hpp"
 
@@ -227,22 +228,49 @@ void partition3Way(Dataset& city, int low, int high, int sortBy, bool ascending,
 	j = gt + 1;
 }
 
-void quickSortHelper(Dataset& city, int low, int high, int sortBy, bool ascending) {
+// 2. Quicksort Recursive Helper (Now tracking Stack Depth!)
+void quickSortHelper(Dataset& city, int low, int high, int sortBy, bool ascending, int depth, int& maxDepth) {
+	// If our current recursion depth is the deepest we've gone, record it!
+	if (depth > maxDepth) {
+		maxDepth = depth;
+	}
+
 	if (low < high) {
 		int i, j;
 		partition3Way(city, low, high, sortBy, ascending, i, j);
-		quickSortHelper(city, low, i, sortBy, ascending);
-		quickSortHelper(city, j, high, sortBy, ascending);
+
+		// Pass depth + 1 into the next level of recursion
+		quickSortHelper(city, low, i, sortBy, ascending, depth + 1, maxDepth);
+		quickSortHelper(city, j, high, sortBy, ascending, depth + 1, maxDepth);
 	}
 }
 
+// 3. Quicksort Main Wrapper
 void quickSort(Dataset& city, int sortBy, bool ascending) {
 	cout << "\nSorting " << city.cityName << " using Quick Sort..." << endl;
+
+	int maxDepth = 0; // Variable to track our deepest recursion level
+
 	auto start = chrono::high_resolution_clock::now();
-	quickSortHelper(city, 0, city.size - 1, sortBy, ascending);
+	// Start the recursion at depth 1
+	quickSortHelper(city, 0, city.size - 1, sortBy, ascending, 1, maxDepth);
 	auto end = chrono::high_resolution_clock::now();
+
 	chrono::duration<double, std::milli> duration = end - start;
-	cout << "Quicksort completed in: " << fixed << setprecision(4) << duration.count() << " ms." << endl;
+
+	// Calculate estimated stack memory. 
+	// Each recursive frame holds a few ints, bools, and a return address (~48 bytes per frame).
+	// Calculate estimated stack memory (~48 bytes per frame).
+	size_t estimatedStackMemory = maxDepth * 48;
+	int expectedOptimalDepth = ceil(log2(city.size));
+
+	cout << "Quicksort completed in: " << fixed << setprecision(4) << duration.count() << " ms.\n";
+	cout << "------------------------------------------------\n";
+	cout << "Memory Usage Analysis (N = " << city.size << ")\n";
+	cout << "Expected Optimal Depth : " << expectedOptimalDepth << " frames\n";
+	cout << "Actual Recursion Depth : " << maxDepth << " frames\n";
+	cout << "Stack Memory Used      : " << estimatedStackMemory << " bytes\n";
+	cout << "------------------------------------------------\n";
 }
 
 //Insertion Sort (Pointer Based)
@@ -276,7 +304,15 @@ void insertionSort(Dataset& city, int sortBy, bool ascending) {
 
 	auto end = chrono::high_resolution_clock::now();
 	chrono::duration<double, std::milli> duration = end - start;
-	cout << "Insertion Sort completed in: " << fixed << setprecision(4) << duration.count() << " ms." << endl;
+
+	// Calculate the memory of the local variables used (key pointer, i, j, moveNeeded)
+	size_t memoryUsed = sizeof(Resident*) + sizeof(int) * 2 + sizeof(bool);
+
+	cout << "Insertion Sort completed in: " << fixed << setprecision(4) << duration.count() << " ms.\n";
+	cout << "------------------------------------------------\n";
+	cout << "Memory Usage Analysis (N = " << city.size << ")\n";
+	cout << "Local Variables Memory : ~" << memoryUsed << " bytes\n";
+	cout << "------------------------------------------------\n";
 }
 
 //Helper Function to Display Sorted Results
