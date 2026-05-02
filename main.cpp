@@ -273,7 +273,7 @@ int main()
 						const string algoName = useInsertion ? "Insertion Sort" : "Quick Sort";
 						const string fieldName = (expressTarget == 1) ? "Age (Ascending)" : "Emission (Descending)";
 
-						cout << "  >> Dataset Scanner: Detected " << fixed << setprecision(1) << (chaosLevel * 100) << "% chaos." << endl;
+						cout << "  >> Dataset Scanner: Detected " << fixed << setprecision(1) << (chaosLevel * 100) << "% chaos	." << endl;
 						cout << "  >> " << cityNames[cityChoice - 1]
 							<< " | Algorithm: " << algoName
 							<< " | Field: " << fieldName << endl;

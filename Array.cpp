@@ -333,8 +333,8 @@ void searchByTransportMode(Dataset& city, string mode) {
 
 // 2. Binary Search (Requires data to be sorted by Age first)
 void searchByAgeBinary(Dataset& city, int targetAge) {
-	int left = 0;
-	int right = city.size - 1;
+	int low = 0;
+	int high = city.size - 1;
 	int foundIndex = -1;
 	int startIndex = -1;
 	int endIndex = -1;
@@ -343,17 +343,17 @@ void searchByAgeBinary(Dataset& city, int targetAge) {
 	auto startTime = chrono::high_resolution_clock::now();
 
 	// Step 1: Standard Binary Search to find ONE match
-	while (left <= right) {
-		int mid = left + (right - left) / 2;
+	while (low <= high) {
+		int mid = low + (high - low) / 2;
 		if (city.data[mid].age == targetAge) {
 			foundIndex = mid;
-			break; // We found a 26! Stop jumping.
+			break; 
 		}
 		if (city.data[mid].age < targetAge) {
-			left = mid + 1;
+			low = mid + 1;
 		}
 		else {
-			right = mid - 1;
+			high = mid - 1;
 		}
 	}
 
