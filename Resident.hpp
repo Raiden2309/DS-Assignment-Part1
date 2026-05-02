@@ -15,9 +15,9 @@ struct Resident {
 
 //Prototypes for array experiments
 struct Dataset {
-	Resident* data;
-	int size;
 	std::string cityName;
+	int size;
+	Resident** data;
 };
 
 #endif

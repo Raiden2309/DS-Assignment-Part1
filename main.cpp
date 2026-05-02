@@ -256,11 +256,11 @@ int main()
 						for (int i = 1; i < cityPtr->size; i++) {
 							if (expressTarget == 1) {
 								// Checking Age (Ascending): Is the current age smaller than the previous one?
-								if (cityPtr->data[i].age < cityPtr->data[i - 1].age) outOfOrderCount++;
+								if (cityPtr->data[i]->age < cityPtr->data[i - 1]->age) outOfOrderCount++;
 							}
 							else {
 								// Checking Emission (Descending): Is current emission higher than previous?
-								if (cityPtr->data[i].totalMonthlyEmissions > cityPtr->data[i - 1].totalMonthlyEmissions) outOfOrderCount++;
+								if (cityPtr->data[i]->totalMonthlyEmissions > cityPtr->data[i - 1]->totalMonthlyEmissions) outOfOrderCount++;
 							}
 						}
 
