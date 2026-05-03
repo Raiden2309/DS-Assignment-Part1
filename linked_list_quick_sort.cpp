@@ -305,6 +305,16 @@ void LinkedList::ageGroupAnalysisRangeWithLinkedList(int minAge, int maxAge, con
 
     cout << string(84, '-') << "\n"
         << "Total Emission for Age Group: " << totalEmissions << " kg CO2\n";
+    int dominantModeIndex = 0;
+    for (int i = 1; i < TRANSPORT_COUNT; i++)
+        if (modeCount[i] > modeCount[dominantModeIndex])
+            dominantModeIndex = i;
+
+    double averageEmission = residentCount > 0 ? totalEmissions / residentCount : 0.0;
+
+    cout << "Most Preferred Transport : " << TRANSPORT_MODES[dominantModeIndex] << "\n"
+        << "Average Emission         : " << fixed << setprecision(2) << averageEmission << " kg CO2/resident\n"
+        << "Total Residents          : " << residentCount << "\n";
 }
 
 // Printing Helpers
