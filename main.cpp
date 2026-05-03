@@ -166,25 +166,33 @@ int main()
 						currentLL->compareWithOtherCity(*otherLL);
 					}
 					else {
-						auto runLL = [&](LinkedList& ll) {
-							if (ageChoice >= 1 && ageChoice <= 5)
-								ll.searchByAgeGroupBinaryWithLinkedList(AGE_MIN[ageChoice - 1], AGE_MAX[ageChoice - 1]);
-							else if (ageChoice == 6)
-								ll.ageGroupAnalysisWithLinkedList();
-							else if (ageChoice == 7)
-								ll.printDatasetSummaryWithLinkedList();
-							else if (ageChoice == 8)
-								ll.printInsightsWithLinkedList();
+						auto runLL = [&](LinkedList& ll, int idx) {
+							if (ageChoice >= 1 && ageChoice <= 5) {
+								if (!sortedByAge[idx]) {
+									cout << "Auto-sorting by Age for binary search...\n";
+									ll.sortWithLinkedList(BY_AGE);
+									sortedByAge[idx] = true;
+								}
+								static const string groupLabels[] = {
+									"Children & Teenagers",
+									"University Students / Young Adults",
+									"Working Adults (Early Career)",
+									"Working Adults (Late Career)",
+									"Senior Citizens / Retirees"
+								};
+								ll.ageGroupAnalysisRangeWithLinkedList(AGE_MIN[ageChoice - 1], AGE_MAX[ageChoice - 1], groupLabels[ageChoice - 1]);
+							}
+							else if (ageChoice == 6) ll.ageGroupAnalysisWithLinkedList();
+							else if (ageChoice == 7) ll.printDatasetSummaryWithLinkedList();
+							else if (ageChoice == 8) ll.printInsightsWithLinkedList();
 							};
 
-						// Handle "All Cities" by running each list individually
 						if (cityChoice == 4) {
-							runLL(llA);
-							runLL(llB);
-							runLL(llC);
+							runLL(llA, 0); runLL(llB, 1); runLL(llC, 2);
 						}
 						else {
-							runLL(*getCityLL(cityChoice, llA, llB, llC));
+							int idx = cityChoice - 1;
+							runLL(*getCityLL(cityChoice, llA, llB, llC), idx);
 						}
 					}
 				}

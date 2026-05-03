@@ -261,6 +261,52 @@ void LinkedList::ageGroupAnalysisWithLinkedList() const {
         << chrono::duration<double, milli>(endTime - startTime).count() << " ms\n";
 }
 
+void LinkedList::ageGroupAnalysisRangeWithLinkedList(int minAge, int maxAge, const string& groupLabel) const {
+    double modeEmissions[20] = {};
+    int    modeCount[20] = {};
+    double totalEmissions = 0;
+    int    residentCount = 0;
+
+    for (Node* currentNode = head; currentNode; currentNode = currentNode->next) {
+        int age = currentNode->data->age;
+        if (age < minAge || age > maxAge) continue;
+
+        totalEmissions += currentNode->data->totalMonthlyEmissions;
+        residentCount++;
+
+        for (int i = 0; i < TRANSPORT_COUNT; i++) {
+            if (currentNode->data->modeOfTransport == TRANSPORT_MODES[i]) {
+                modeCount[i]++;
+                modeEmissions[i] += currentNode->data->totalMonthlyEmissions;
+                break;
+            }
+        }
+    }
+
+    cout << "\n" << string(84, '=') << "\n"
+        << "Carbon Emission Analysis: " << cityLabel << "\n"
+        << string(84, '=') << "\n"
+        << "Age Group: " << minAge << "-" << maxAge << ": " << groupLabel << "\n"
+        << string(84, '-') << "\n"
+        << left << setw(22) << "Mode of Transport"
+        << setw(10) << "Count"
+        << setw(32) << "Total Emission (kg CO2)"
+        << setw(20) << "Average per Resident\n"
+        << string(84, '-') << "\n";
+
+    for (int i = 0; i < TRANSPORT_COUNT; i++) {
+        if (modeCount[i] == 0) continue;
+        cout << left << setw(22) << TRANSPORT_MODES[i]
+            << setw(10) << modeCount[i]
+            << fixed << setprecision(2)
+            << setw(32) << modeEmissions[i]
+            << setw(20) << modeEmissions[i] / modeCount[i] << "\n";
+    }
+
+    cout << string(84, '-') << "\n"
+        << "Total Emission for Age Group: " << totalEmissions << " kg CO2\n";
+}
+
 // Printing Helpers
 
 static void printTableHeader() {

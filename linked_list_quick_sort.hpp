@@ -39,6 +39,7 @@ public:
 
 
     void ageGroupAnalysisWithLinkedList() const;
+    void ageGroupAnalysisRangeWithLinkedList(int minAge, int maxAge, const std::string& groupLabel) const;
     int  getlinkedListCountWithLinkedList() const;
     void printMemoryUsageWithLinkedList() const;
     void compareWithOtherCity(const LinkedList& other) const;
