@@ -1,7 +1,4 @@
 
-
----
-
 # Carbon Emission Tracking System
 
 A performance-focused C++ console application designed to load, process, sort, and analyze citizen transportation carbon emission datasets. This system evaluates algorithmic performance and memory overhead across two distinct data structures: **Dynamic Pointer Arrays** and **Doubly-Linked Lists**.
